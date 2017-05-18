@@ -120,7 +120,7 @@ test_that("getting survival inputs works",
            surv_info_dup <- ok_surv_info
            surv_info_dup[1, c("fit_directory", "fit_file", "time_col", "censor_col")] <- 
              surv_info_dup[2, c("fit_directory", "fit_file", "time_col", "censor_col")]
-           expect_error(check_survival_specs(surv_info_dup),
+           expect_error(capture.output(check_survival_specs(surv_info_dup)),
                         "same time column and censoring column")
            surv_info_wrong_type <- ok_surv_info
            surv_info_wrong_type[1, "type"] <- "oops"

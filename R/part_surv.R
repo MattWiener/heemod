@@ -447,9 +447,13 @@ join_fits_to_def <- function(surv_def, fit_tibble) {
     )
   ok_dist_names <-
     should_be_fits_2$dist %in% c(allowed_fit_distributions, "km")
+  wrong_dist_names <-
+    unique(should_be_fits_2$dist[!ok_dist_names])
   if(any(!ok_dist_names))
-    stop("disallowed distribution names in use_fits file: ",
-         paste(unique(should_be_fits_2$dist[!ok_dist_names]), collapse = ", "),
+    stop("disallowed distribution name", 
+         plur(length(wrong_dist_names)),
+         " in use_fits file: ",
+         paste(wrong_dist_names, collapse = ", "),
          "\n",
          "allowed distributions: ",
          paste(allowed_fit_distributions, collapse = ", ")
@@ -481,12 +485,19 @@ join_fits_to_def <- function(surv_def, fit_tibble) {
         ".subset" = "set_name"
       )
     )
-  problem <- sapply(should_be_fits_3$fit, is.null)
+  problem <- sapply(should_be_fits_3$fit, is.null) |
+    sapply(should_be_fits_3$fit, is.na)
   if (any(problem)) {
     print(surv_def[problem, ])
-    stop("fit not found for lines ",
+    stop("fit not found for line",
+         plur(sum(problem)),
+         " ",
          paste(which(problem), collapse = ", "),
-         " (shown above); check distribution and subset names for fits")
+         " (shown above);\n",
+         "check that subsets are assigned to the proper ",
+         "survival type (PFS or OS), and that fits exist ",
+         "(are not NULL)"
+    )
   }
   should_be_fits_3
 }
