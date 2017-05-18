@@ -454,6 +454,22 @@ join_fits_to_def <- function(surv_def, fit_tibble) {
          "allowed distributions: ",
          paste(allowed_fit_distributions, collapse = ", ")
     )
+  
+  ok_subset_names <-
+    should_be_fits_2$.subset %in% fit_tibble$set_name
+  missing_set_names <- 
+    unique(should_be_fits_2$.subset[!ok_subset_names])
+  missing_for_message <- paste0("subset name", 
+                        plur(length(missing_set_names)))
+  if(length(missing_set_names) > 0)
+    stop(missing_for_message,
+         " ",
+         paste(missing_set_names, collapse = ", "),
+         " from specification of fits to use not present in fits;\n",
+         " could ", missing_for_message, " be misspelled, ",
+         "or might the fits need to be rerun?"
+         )
+  
   ## and join in the fits and subset definitions
   should_be_fits_3 <- should_be_fits_2 %>%
     dplyr::left_join(
@@ -470,7 +486,7 @@ join_fits_to_def <- function(surv_def, fit_tibble) {
     print(surv_def[problem, ])
     stop("fit not found for lines ",
          paste(which(problem), collapse = ", "),
-         " (shown above); check distribution names for fits")
+         " (shown above); check distribution and subset names for fits")
   }
   should_be_fits_3
 }
