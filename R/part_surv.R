@@ -486,7 +486,7 @@ join_fits_to_def <- function(surv_def, fit_tibble) {
       )
     )
   problem <- sapply(should_be_fits_3$fit, is.null) |
-    sapply(should_be_fits_3$fit, is.na)
+    is.na(should_be_fits_3$fit)
   if (any(problem)) {
     print(surv_def[problem, ])
     stop("fit not found for line",
