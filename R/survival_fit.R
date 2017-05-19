@@ -138,13 +138,10 @@ survival_from_data <-
    }
     else{
       ## going to check whether we have an absolute directory
-      ##   for data directory, or relative.  We assume absolute
-      ##   if it begins either with a letter and a colon
-      ##   or with two slashes.
+      ##   for data directory, or relative.  
       is_absolute <- 
         grepl("^[A-Z]:", survival_specs$data_directory) |
-        substr(survival_specs$data_directory, 1, 2) == "\\" |
-        substr(survival_specs$data_directory, 1, 1) == .Platform$file.sep
+        grepl("^(/|\\\\)", survival_specs$data_directory)
       data_files <- file.path(location,
                               survival_specs$data_directory,
                               survival_specs$data_file)
