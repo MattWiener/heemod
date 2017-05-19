@@ -368,6 +368,10 @@ find_least_cost_partition <-
       stop("must have package 'lpSolve' for finding least cost dose strategies")
     }
     ## input checking
+    if (!all(c("size", "cost") %in% names(available_units))){
+      stop("available_units must have columns 'size' and 'cost'")
+    }
+      
     if (is.null(subset_col) + is.null(subset_val) == 1)
       stop("subset_col and subset_val should either both be NULL, or both be set")
     if (!is.null(subset_col) & !is.null(subset_val)) {

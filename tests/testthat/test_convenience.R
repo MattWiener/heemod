@@ -119,3 +119,62 @@ test_that("utility by time before death",
       
     }
     )
+
+test_that("finding least-cost combination of vials for a dose works",
+          {
+            units <- data.frame(
+              trt = c("fake", "fake"),
+              volume = c(40, 100),
+              cost = c(1003.01, 2507.54)
+            )
+            expect_error(find_least_cost_partition(214.3,
+                                                   units,
+                                                   subset_col = "trt",
+                                                   subset_val = "fake"),
+                         "available_units must have columns 'size' and 'cost'")
+            names(units)[2] <- c("size")
+            expect_equal(find_least_cost_partition(214.3,
+                                                   units,
+                                                   subset_col = "trt",
+                                                   subset_val = "fake"),
+                             data.frame(desired_dose = 214.3,
+                                        used_dose = 220,
+                                        waste = 5.7,
+                                        cost = 5516.57))
+      
+            expect_error(find_least_cost_partition(214.3,
+                                                   units,
+                                                   subset_col = "trt"),
+                         "subset_col and subset_val should either both be NULL"
+                         )
+            expect_error(find_least_cost_partition(214.3,
+                                                   units,
+                                                   subset_val = "fake"),
+                         "subset_col and subset_val should either both be NULL"
+                         )
+            expect_error(find_least_cost_partition(214.3,
+                                                   units,
+                                                   subset_col = "not_a_col",
+                                                   subset_val = "fake"),
+                         "is not a column of available_units"
+                         )
+            expect_error(find_least_cost_partition(214.3,
+                                                   units,
+                                                   subset_col = "trt",
+                                                   subset_val = "not_there"),
+                         "does not contain the value"
+                         )
+            expect_error(find_least_cost_partition(214.3,
+                                                   units,
+                                                   subset_col = "trt",
+                                                   subset_val = c("fake1", "fake2")),
+                         "exactly one value"
+            )
+            expect_error(find_least_cost_partition(214.3,
+                                                   units,
+                                                   subset_col = c("trt1", "trt2"),
+                                                   subset_val = "fake"),
+                         "exactly one column"
+            )
+            
+          })
