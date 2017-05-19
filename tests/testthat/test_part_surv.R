@@ -345,21 +345,16 @@ test_that("making part_surv from survival fits works",
             ok_surv_info <-
               heemod:::read_file(system.file("tabular/surv/survival_info.csv",
                                              package = "heemod"))
-            these_fits <-
-              heemod:::survival_from_data(
-                location = location,
-                survival_specs = ok_surv_info,
-                dists = c("exp", "weibull"),
-                save_fits = FALSE,
-                use_envir = new.env()
-              )
+            fake_fit_tib <- read_file(system.file("tabular/surv",
+                                                  "fake_fit_tib.csv", 
+                                                  package = "heemod"))
             these_part_survs <- 
-              part_survs_from_surv_inputs(these_fits[[1]],
+              part_survs_from_surv_inputs(fake_fit_tib,
                                           c("ProgressionFree",
                                             "Progressive",
                                             "Terminal",
                                             "Death"))
-            expect_equal(nrow(these_part_survs), 15)
+            expect_equal(nrow(these_part_survs), 14)
             expect_identical(
               names(these_part_survs),
               c("treatment", "set_name", "dist", "set_def", "part_surv")
