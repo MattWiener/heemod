@@ -249,11 +249,13 @@ summary_helper <- function(fit, type, ...){
                                seq(from = 1, 
                                    to = max(res1[["time"]]),
                                    by = 1))))
-    res1 <- summary(fit, t = all_times, ...)
+    res1 <- summary(fit, type = type, t = all_times, ...)
   }
   if(inherits(res1, "summary.survfit")){
     res1 <- data.frame(res1[c("time", "surv", "lower", "upper")])
     names(res1) <- c("time", "est", "lcl", "ucl")
+    if(type == "cumhaz")
+      res1[, -1] <- -log(res1[, -1])
     res1
   }
   res1
@@ -289,6 +291,14 @@ plot_fit_data <- function(data_to_plot,
                           title = NULL,
                           x_axis_gap,
                           legend_loc = "right"){
+  if(length(unique(data_to_plot$type)) > 1)
+    warning("more than one type in plotting data - could cause problems")
+  if(length(unique(data_to_plot$treatment)) > 1)
+    warning("more than one treatment in plotting data - could cause problems")
+  if(length(unique(data_to_plot$set_name)) > 1)
+    warning("more than one subset name in plotting data - could cause problems")
+  if(!("km" %in% unique(data_to_plot$dist)))
+    stop("no 'km' in dist column - but Kaplan-Meier curve is required")
   type <- match.arg(type)
   stopifnot(legend_loc %in% c("right", "left", "bottom", "top"))
   data_to_plot <- dplyr::filter_(data_to_plot, 
