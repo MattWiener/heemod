@@ -26,13 +26,8 @@ from \code{fit_files}}
 \item{set_definitions}{definitions of different subsets to fit}
 }
 \value{
-A list with two elements:  \itemize{
-\item{\code{best_models},
-a list with the fits for each data file passed in; and}
-\item{\code{envir},
-an environment containing the models so they can be referenced to
-get probabilities.}
-}
+a tibble with columns \code{type}, \code{treatment}, \code{set_name},
+\code{dist}, \code{fit}, \code{set_def}, and \code{time_subtract}
 }
 \description{
 Title Get survival analysis curves from data

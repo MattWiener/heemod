@@ -147,14 +147,16 @@ test_that("fitting works (including with subsets)",
                                  dists = c("exp", "weibull"),
                                  save_fits = FALSE,
                                  use_envir = new.env())
-            expect_identical(names(these_fits), c("", "env"))
-            expect_identical(names(these_fits[[1]]),
+            expect_identical(names(these_fits), ##c("", "env"))
+            ##expect_identical(names(these_fits[[1]]),
                              c("type", "treatment", "set_name",
                                "dist", "fit", "set_def",
                                "time_subtract"))
-            expect_identical(these_fits[[1]]$dist,
+            ##expect_identical(these_fits[[1]]$dist,
+            expect_identical(these_fits$dist,
                              rep(c("exp", "weibull", "km"), 10))
-            expect_identical(sapply(these_fits[[1]]$fit, class),
+            ##expect_identical(sapply(these_fits[[1]]$fit, class),
+            expect_identical(sapply(these_fits$fit, class),
                              c(rep(c("flexsurvreg", "flexsurvreg", "survfit",
                                    "surv_shift", "surv_shift", "surv_shift"), 
                                  3),
@@ -162,7 +164,8 @@ test_that("fitting works (including with subsets)",
                                "flexsurvreg", "flexsurvreg", "survfit",
                                "surv_shift", "surv_shift", "surv_shift",
                                "flexsurvreg", "flexsurvreg", "survfit")))
-            combos <- table(these_fits[[1]][, c("treatment", "set_def")])
+            ## combos <- table(these_fits[[1]][, c("treatment", "set_def")])
+            combos <- table(these_fits[, c("treatment", "set_def")])
             ## sorting to make sure things are in right order for tests -
             ##   otherwise sometimes had problems with different locales
             combos <- combos[c("A", "B"),]
@@ -172,7 +175,8 @@ test_that("fitting works (including with subsets)",
                                   set_def = c("biomarker > 0.5","time > 50", "TRUE")))
             expect_identical(as.numeric(combos),
                              c(0, 6, 6, 6, 6, 6))
-            metrics <- extract_surv_fit_metrics(these_fits[[1]])
+            ## metrics <- extract_surv_fit_metrics(these_fits[[1]])
+            metrics <- extract_surv_fit_metrics(these_fits)
             expect_identical(names(metrics),
                              c("type", "treatment", "set_name", "dist", "fit",
                                "set_def", "time_subtract", "AIC", "BIC", "m2LL"))
@@ -192,7 +196,8 @@ test_that("fitting works (including with subsets)",
                                           dists = c("exp", "weibull"),
                                           save_fits = FALSE,
                                           use_envir = new.env())
-            metrics <- extract_surv_fit_metrics(abs_path_fits[[1]])
+            ## metrics <- extract_surv_fit_metrics(abs_path_fits[[1]])
+            metrics <- extract_surv_fit_metrics(abs_path_fits)
             expect_identical(names(metrics),
                              c("type", "treatment", "set_name", "dist", "fit",
                                "set_def", "time_subtract", "AIC", "BIC", "m2LL"))
@@ -204,7 +209,8 @@ test_that("fitting works (including with subsets)",
             )
             
             ## make sure metrics works calling with just one row
-            metrics <- extract_surv_fit_metrics(these_fits[[1]][1,])
+            ##metrics <- extract_surv_fit_metrics(these_fits[[1]][1,])
+            metrics <- extract_surv_fit_metrics(these_fits[1,])
             expect_identical(round(metrics[, c("AIC", "BIC", "m2LL")], 3),
                              tibble::tribble(~AIC, ~BIC, ~m2LL,
                                              494.77, 496.662, 492.77)
@@ -233,9 +239,12 @@ test_that("fitting works (including with subsets)",
                                           save_fits = FALSE,
                                           use_envir = new.env())
             ## this should have same results as earlier fits
-            expect_identical(lapply(these_fits[[1]]$fit, compute_surv, time = c(45:55)),
-                             lapply(eventcode_fits[[1]]$fit, compute_surv, time = c(45:55))
-                             )
+            # expect_identical(lapply(these_fits[[1]]$fit, compute_surv, time = c(45:55)),
+            #                  lapply(eventcode_fits[[1]]$fit, compute_surv, time = c(45:55))
+            #                  )
+            expect_identical(lapply(these_fits$fit, compute_surv, time = c(45:55)),
+                             lapply(eventcode_fits$fit, compute_surv, time = c(45:55))
+            )
             ## check that if we designate subsets by type, the ones
             ##    we leave out don't show up (no GT50 for OS)
             subset_fits_by_type <- 
@@ -245,7 +254,8 @@ test_that("fitting works (including with subsets)",
                                           save_fits = FALSE,
                                           use_envir = new.env(),
                                           set_definitions = "set_def_pfs_os.csv")
-            expect_identical(unique(subset_fits_by_type[[1]][, 1:3]),
+            ##expect_identical(unique(subset_fits_by_type[[1]][, 1:3]),
+            expect_identical(unique(subset_fits_by_type[, 1:3]),
                              tibble::tribble(
                                ~type, ~treatment, ~set_name,
                                "PFS", "A", "all",

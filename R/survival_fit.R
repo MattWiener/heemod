@@ -70,7 +70,7 @@ partitioned_survival_from_tabular <-
   
   surv_inputs <- survival_fits_from_tabular(base_dir, ref_file, df_env, 
                              save_fits, just_load)
-  part_survs_from_surv_inputs(surv_inputs[[1]], state_names)
+  part_survs_from_surv_inputs(surv_inputs, state_names)
 }
 
 #' @export
@@ -95,13 +95,8 @@ partitioned_survival_from_ref_struc <- function(ref, df_env,
 #' @param just_load If TRUE, data files are ignored in favor of loading fits
 #'    from `fit_files`
 #' @param set_definitions definitions of different subsets to fit
-#' @return A list with two elements:  \itemize{
-#'    \item{`best_models`, 
-#'    a list with the fits for each data file passed in; and} 
-#'    \item{`envir`, 
-#'    an environment containing the models so they can be referenced to 
-#'    get probabilities.}
-#'    }
+#' @return a tibble with columns `type`, `treatment`, `set_name`,
+#'    `dist`, `fit`, `set_def`, and `time_subtract`
 #' @details By default, the function fits with seven 
 #'   different distribution fucntions:
 #'   exponential,  Weibull,  lognormal, log-logistic, 
@@ -278,7 +273,8 @@ survival_from_data <-
     }
 
     names(surv_models) <- survival_specs$fit_name
-    list(do.call("rbind", surv_models), env = use_envir)
+    do.call("rbind", surv_models)
+##    list(do.call("rbind", surv_models), env = use_envir)
   }
 
 

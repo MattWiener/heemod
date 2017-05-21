@@ -175,7 +175,7 @@ the package.)
 
 ```{r make-fits}
 temp1 <- survival_fits_from_tabular(base_dir, spec_file, 
-                                    save_fits = FALSE)[[1]]
+                                    save_fits = FALSE)
 ```
 
 `heemod` does not automatically choose a distribution to use in the survival model - the modeler must choose the most appropriate distribution for each set of survival data.
