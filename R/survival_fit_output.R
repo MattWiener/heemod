@@ -223,6 +223,18 @@ send_info_to_workbook <-
 #'
 prepare_plot_data_from_fit_tibble <-
   function(fit_tib){
+    if(!inherits(fit_tib, c("tbl_df", "tbl", "data.frame")))
+      stop("fit_tib should be a tibble")
+    required_names <- c("type", "treatment", "set_name", "dist", "fit")
+    missing_names <- setdiff(required_names, names(fit_tib))
+    if(length(missing_names) > 0)
+      stop("fit_tib is missing column", 
+           plur(length(missing_names)),
+           " with name",
+           plur(length(missing_names)),
+           ": ", 
+           paste(missing_names, collapse = ", ")
+           )
     survival_summaries <- 
       fit_tib %>% 
         dplyr::group_by_(~ type, ~ treatment, ~ set_name, ~ dist) %>%
