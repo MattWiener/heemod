@@ -317,12 +317,32 @@ plot_fit_data <- function(data_to_plot,
                                  lazyeval::interp(~fn == var, var = type))
   data_to_plot$time <- data_to_plot$time * scale_time
   data_to_plot <- dplyr::filter_(data_to_plot, ~ time <= max_scaled_time)
+
+  unique_dists <- unique(data_to_plot$dist)
+  use_colors <- hcl(h = seq(15, 375, length = length(unique_dists) + 1),
+                    l = 65, c = 100)[1:length(unique_dists)]
+  use_colors[unique_dists == "km"] <- "black"
+  unique_labels <- unique_dists
+  unique_labels[unique_dists == "km"] <- "Kaplan-Meier"
+  line_widths <- rep(1, length(unique_dists))
+  line_widths[unique_dists == "km"] <- 1.5
+  data_to_plot <- 
+    dplyr::left_join(data_to_plot,
+                     data.frame(dist = unique_dists,
+                                lwd = line_widths,
+                                stringsAsFactors = FALSE),
+                     by = "dist")
   res <- 
     ggplot2::ggplot(data_to_plot,
                     ggplot2::aes(x = time, y = est, color = dist)) + 
-      ggplot2::geom_line(data = dplyr::filter_(data_to_plot, ~ dist != "km")) +
-      ggplot2::geom_step(data = dplyr::filter_(data_to_plot, ~ dist == "km"), 
-                         col = "black", lwd = 1.5) 
+      ggplot2::geom_line(data = data_to_plot) +
+      ggplot2::geom_step(ggplot2::aes(x = time, y = est), 
+                         data = dplyr::filter_(data_to_plot, ~ dist == "km"), 
+                         col = "black", 
+                         lwd = 1.5) +
+      ggplot2::scale_color_manual(name = unique_dists, 
+                                  labels = unique_labels,
+                                  values = use_colors) 
   if(logy) res <- res + ggplot2::scale_y_log10()
   if(!is.infinite(max_scaled_time) & !missing(x_axis_gap)){
     breaks <- seq(from = 0, to = max_scaled_time, by = x_axis_gap)
