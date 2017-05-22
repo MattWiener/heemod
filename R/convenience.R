@@ -5,32 +5,60 @@
 #' @param cycle the cycle
 #' @param at_age at what age should the cost be incurred
 #' @param at_cycle in what cycle should cost be incurred?
-#' @param use_age should age be used? (If not, cycle is used.)
 #'
 #' @return  0 except when the age or cycle condition is met; 
-#'   \code{cost} when the condition is met.
+#'   \code{cost} when at least one condition is met.
 #' @export
 #'
 #' @details intended for use in parameters object 
 #'   for \code{heemod} models.
 #' 
 #' @examples
-#' cost_at_right_time(500, age = 1:20, at_age = 10, use_age = TRUE)
-#' cost_at_right_time(500, cycle = 1:20, at_cycle = 10, use_age = FALSE)
+#' cost_at_right_time(500, age = 1:20, at_age = 10)
+#' cost_at_right_time(500, cycle = 1:20, at_cycle = 10)
 cost_at_right_time <-
   function(cost, age, cycle, at_age, at_cycle, use_age){
+    if(missing(cost))
+      stop("'cost' must be specified")
+    if(missing(at_age) & missing(at_cycle))
+      stop("must specify at least one of 'at_cost' and 'at_age'")
+    if(missing(cycle) & missing(age))
+      stop("must specify at least one of 'cost' and 'age'")
+    if((!missing(cycle) & !missing(age)) &&
+       length(cycle) != length(age))
+        stop("if both cycle and age are defined, ",
+             "they must have the same length")
+    have_cycle_info <- !missing(cycle) & !missing(at_cycle)
+    have_age_info <- !missing(age) & !missing(at_age)
+    if(!have_cycle_info & !have_age_info)
+      stop("must give at least one of both 'cycle' and 'at_cycle' ", 
+           "or both 'age' and 'at_age'")
     
-    if(!use_age){
-      if(missing(cycle) | missing(at_cycle))
-        stop("when use_age = FALSE, must supply cycle and at_cycle")
-      return(cost * (cycle == at_cycle))
-    }
-    if(use_age){
-      if(missing(age) | missing(at_age))
-        stop("when use_age = TRUE, must supply age and at_age")
-      
-      return(cost * (age == at_age))
-    }
+    cond_length <- ifelse(missing(cycle), length(age), length(cycle))
+            
+    if(missing(at_age) | missing(age))
+      cost_age <- rep(FALSE, cond_length)
+    else
+      cost_age <- age %in% at_age
+    
+    if(missing(at_cycle) | missing(cycle))
+      cost_cycle <- rep(FALSE, cond_length)
+    else
+      cost_cycle <- cycle %in% at_cycle
+
+    return(cost * (cost_age | cost_cycle))
+            
+    # if(!use_age){
+    #   if(missing(cycle) | missing(at_cycle))
+    #     stop("when use_age = FALSE, must supply cycle and at_cycle")
+    #   return(cost * (cycle == at_cycle))
+    # }
+    # if(use_age){
+    #   if(missing(age) | missing(at_age))
+    #     stop("when use_age = TRUE, must supply age and at_age")
+    #   
+    #   return(cost * (age == at_age))
+    # }
   }
 
 

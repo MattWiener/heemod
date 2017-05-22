@@ -177,4 +177,33 @@ test_that("finding least-cost combination of vials for a dose works",
                          "exactly one column"
             )
             
-          })
+          }
+          )
+
+test_that("cost_at_right_time works",
+          {
+            expect_error(cost_at_right_time(cost = 5, cycle = 1:10, age = 50 + 1:10),
+                         "must specify at least one of 'at_cost' and 'at_age'")
+            expect_error(cost_at_right_time(cost = 5, at_cycle = 5, at_age = 55),
+                         "must specify at least one of 'cost' and 'age'")
+            expect_error(cost_at_right_time(cost = 5, cycle = 1:10, age = 50 + 1:11,
+                                            at_cycle = 8),
+                         "must have the same length")
+            expect_error(cost_at_right_time(cost = 5, cycle = 1:10, at_age = 55),
+                         "at least one of both 'cycle' and 'at_cycle'")
+            expect_error(cost_at_right_time(cost = 5, age = 1:10, at_cycle = 5),
+                         "at least one of both 'cycle' and 'at_cycle'")
+            expect_equal(cost_at_right_time(cost = 5, cycle = 1:10, at_cycle = 20),
+                         rep(0, 10))
+            expect_equal(cost_at_right_time(cost = 5, age = 1:10, at_age = 20),
+                         rep(0, 10))
+            expect_equal(cost_at_right_time(cost = 5, cycle = 1:10, at_cycle = c(3, 6)),
+                         c(0, 0, 5, 0, 0, 5, 0, 0, 0, 0))
+            expect_equal(cost_at_right_time(cost = 5, age = 1:10, at_age = c(4, 7)),
+                         c(0, 0, 0, 5, 0, 0, 5, 0, 0, 0))
+            expect_equal(cost_at_right_time(cost = 5, cycle = 1:10, age = 50 + 1:10,
+                                            at_cycle = 3, at_age = 55),
+                         c(0, 0, 5, 0, 5, 0, 0, 0, 0, 0))
+            
+          }
+          )

@@ -16,12 +16,10 @@ cost_at_right_time(cost, age, cycle, at_age, at_cycle, use_age)
 \item{at_age}{at what age should the cost be incurred}
 
 \item{at_cycle}{in what cycle should cost be incurred?}
-
-\item{use_age}{should age be used? (If not, cycle is used.)}
 }
 \value{
 0 except when the age or cycle condition is met;
-\code{cost} when the condition is met.
+\code{cost} when at least one condition is met.
 }
 \description{
 Allow assignment of a cost at a particular cycle or age
@@ -31,6 +29,6 @@ intended for use in parameters object
 for \code{heemod} models.
 }
 \examples{
-cost_at_right_time(500, age = 1:20, at_age = 10, use_age = TRUE)
-cost_at_right_time(500, cycle = 1:20, at_cycle = 10, use_age = FALSE)
+cost_at_right_time(500, age = 1:20, at_age = 10)
+cost_at_right_time(500, cycle = 1:20, at_cycle = 10)
 }
