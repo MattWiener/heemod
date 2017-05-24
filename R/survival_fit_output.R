@@ -63,6 +63,7 @@ write_fits_to_excel_from_tibble <-
   function(fit_tibble, wb, skip_at_start = 3, skip_between = 1,
            alignment = c("horizontal", "vertical")){
     requireNamespace("XLConnect")
+    requireNamespace("flexsurv")
 
     ## if necessary, get flexsurvreg fits out of surv_X objects
     if(is.character(wb)) 

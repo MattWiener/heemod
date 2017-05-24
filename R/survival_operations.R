@@ -477,7 +477,7 @@ summary.surv_shift <-
     res <- summary(object$dist, ...)
     if(inherits(res, "summary.survfit")){
       if(summary_type == "plot"){
-        res <- data.frame(res[c("time", "surv", "upper", "lower")])
+        res <- data.frame(res[c("time", "surv", "lower", "upper")])
         names(res) <- c("time", "est", "lcl", "ucl")
       }
     }
