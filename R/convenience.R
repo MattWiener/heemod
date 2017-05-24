@@ -17,7 +17,7 @@
 #' cost_at_right_time(500, age = 1:20, at_age = 10)
 #' cost_at_right_time(500, cycle = 1:20, at_cycle = 10)
 cost_at_right_time <-
-  function(cost, age, cycle, at_age, at_cycle, use_age){
+  function(cost, age, cycle, at_age, at_cycle){
     if(missing(cost))
       stop("'cost' must be specified")
     if(missing(at_age) & missing(at_cycle))
@@ -48,17 +48,6 @@ cost_at_right_time <-
 
     return(cost * (cost_age | cost_cycle))
             
-    # if(!use_age){
-    #   if(missing(cycle) | missing(at_cycle))
-    #     stop("when use_age = FALSE, must supply cycle and at_cycle")
-    #   return(cost * (cycle == at_cycle))
-    # }
-    # if(use_age){
-    #   if(missing(age) | missing(at_age))
-    #     stop("when use_age = TRUE, must supply age and at_age")
-    #   
-    #   return(cost * (age == at_age))
-    # }
   }
 
 

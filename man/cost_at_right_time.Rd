@@ -4,7 +4,7 @@
 \alias{cost_at_right_time}
 \title{Allow assignment of a cost at a particular cycle or age}
 \usage{
-cost_at_right_time(cost, age, cycle, at_age, at_cycle, use_age)
+cost_at_right_time(cost, age, cycle, at_age, at_cycle)
 }
 \arguments{
 \item{cost}{cost, in units when incurred}
