@@ -51,6 +51,9 @@ prepare_fit_info <- function(fit_list){
 #' @param skip_at_start how many lines to skip at the top of each page
 #' @param skip_between how many lines to skip between output sections
 #' @param alignment either "horizontal" or "vertical"
+#' @param B_ci number of simulations to use for confidence intervals
+#'   for `flexsurvreg` objects; becomes the `B` of 
+#'   [summary.flexsurvreg()]
 #' @details Called for the side effect of creating Excel output.
 #' 
 #' `alignment = 'vertical'` means sections are written one after
@@ -61,7 +64,8 @@ prepare_fit_info <- function(fit_list){
 #'
 write_fits_to_excel_from_tibble <- 
   function(fit_tibble, wb, skip_at_start = 3, skip_between = 1,
-           alignment = c("horizontal", "vertical")){
+           alignment = c("horizontal", "vertical"),
+           B_ci = 100){
     requireNamespace("XLConnect")
     requireNamespace("flexsurv")
 
@@ -121,7 +125,8 @@ write_fits_to_excel_from_tibble <-
       dplyr::ungroup()
     
     
-    plot_data <- prepare_plot_data_from_fit_tibble(fit_tibble)
+    plot_data <- prepare_plot_data_from_fit_tibble(fit_tibble, 
+                                                   B_ci = B_ci)
     plot_data_km <- plot_data %>% 
       dplyr::filter_(~ dist == "km", ~fn == "survival")
   
@@ -218,12 +223,14 @@ send_info_to_workbook <-
 #' Prepare fit data for plotting
 #'
 #' @param fit_tib a tibble containing fits
-#'
+#' @param B_ci number of simulations to use for confidence intervals
+#'   for `flexsurvreg` objects; becomes the `B` of 
+#'   [summary.flexsurvreg()]
 #' @return a tibble with the necessary data
 #' @export
 #'
 prepare_plot_data_from_fit_tibble <-
-  function(fit_tib){
+  function(fit_tib, B_ci = 100){
     if(!inherits(fit_tib, c("tbl_df", "tbl", "data.frame")))
       stop("fit_tib should be a tibble")
     required_names <- c("type", "treatment", "set_name", "dist", "fit")
@@ -245,25 +252,23 @@ prepare_plot_data_from_fit_tibble <-
     cumhaz_summaries <- 
       fit_tib %>% 
       dplyr::group_by_(~ type, ~ treatment, ~ set_name, ~ dist) %>%
-      dplyr::do(summary_helper(.$fit[[1]], type = "cumhaz", tidy = TRUE)) %>%
+      dplyr::do(summary_helper(.$fit[[1]], type = "cumhaz", 
+                               tidy = TRUE, B = B_ci)) %>%
       dplyr::ungroup()
     cumhaz_summaries$fn <- "cumulative hazard"
     rbind(survival_summaries, cumhaz_summaries)
   }
 
 summary_helper <- function(fit, type, ...){
-  stopifnot(inherits(fit, c("flexsurvreg", "survfit", "surv_shift")))
-    if(inherits(fit, "surv_shift")){
-      res1 <- summary.surv_shift(fit, type = type, ...)
-    }
-  else{
+  stopifnot(inherits(fit, c("flexsurvreg", "survfit", "surv_shift",
+                            "surv_projection")))
     res1 <- summary(fit, type = type, ...)
     all_times <- sort(unique(c(res1[["time"]],
                                seq(from = 1, 
                                    to = max(res1[["time"]]),
                                    by = 1))))
     res1 <- summary(fit, type = type, t = all_times, ...)
-  }
+
   if(inherits(res1, "summary.survfit")){
     res1 <- data.frame(res1[c("time", "surv", "lower", "upper")])
     names(res1) <- c("time", "est", "lcl", "ucl")
@@ -280,8 +285,7 @@ summary_helper <- function(fit, type, ...){
 #'
 #' @param data_to_plot a data frame from 
 #'   [prepare_plot_data_from_fit_tibble()]
-#' @param type `survival` or `cumulative hazard`
-#' @param logy should the `y` axis be on the logarithmic scale?
+#' @param plot_type `survival` or `cumulative hazard`
 #' @param scale_time times are multiplied by this.  So if your
 #'   fit was done on a time scale of days, and you want to plot
 #'   by weeks, set this to 1/7.
@@ -290,20 +294,24 @@ summary_helper <- function(fit, type, ...){
 #' @param title for the plot
 #' @param x_axis_gap distance between breaks on the x axis
 #' @param legend_loc location for legend - "top", "bottom", "left", or "right"
-#'
+#' @param logy should the `y` axis be on the logarithmic scale?  By default,
+#'   it is TRUE for survival curves and FALSE for cumulative hazard.
+#' @param km_width width for the Kaplan-Meier curve line;
+#'   approximately 0.5 seems to be the standard width for lines
 #' @return a `ggplot2` plot object
 #' @export
 #'
 #' @examples
 plot_fit_data <- function(data_to_plot, 
-                          type = c("survival", "cumulative hazard"),
-                          logy = FALSE,
+                          plot_type = c("survival", "cumulative hazard"),
                           scale_time = 1,
                           time_label = "time",
                           max_scaled_time = Inf,
                           title = NULL,
                           x_axis_gap,
-                          legend_loc = "right"){
+                          legend_loc = "right",
+                          logy = NULL, 
+                          km_width = 1.25){
   if(length(unique(data_to_plot$type)) > 1)
     warning("more than one type in plotting data - could cause problems")
   if(length(unique(data_to_plot$treatment)) > 1)
@@ -312,16 +320,21 @@ plot_fit_data <- function(data_to_plot,
     warning("more than one subset name in plotting data - could cause problems")
   if(!("km" %in% unique(data_to_plot$dist)))
     stop("no 'km' in dist column - but Kaplan-Meier curve is required")
-  type <- match.arg(type)
+  plot_type <- match.arg(plot_type)
+  if(is.null(logy)){
+    logy <- ifelse(plot_type == "survival", TRUE, FALSE)
+  }
   stopifnot(legend_loc %in% c("right", "left", "bottom", "top"))
   data_to_plot <- dplyr::filter_(data_to_plot, 
-                                 lazyeval::interp(~fn == var, var = type))
+                                 lazyeval::interp(~fn == var, 
+                                                  var = plot_type))
   data_to_plot$time <- data_to_plot$time * scale_time
   data_to_plot <- dplyr::filter_(data_to_plot, ~ time <= max_scaled_time)
 
   unique_dists <- unique(data_to_plot$dist)
-  use_colors <- hcl(h = seq(15, 375, length = length(unique_dists) + 1),
-                    l = 65, c = 100)[1:length(unique_dists)]
+  use_colors <- 
+    grDevices::hcl(h = seq(15, 375, length = length(unique_dists) + 1),
+                   l = 65, c = 100)[1:length(unique_dists)]
   use_colors[unique_dists == "km"] <- "black"
   unique_labels <- unique_dists
   unique_labels[unique_dists == "km"] <- "Kaplan-Meier"
@@ -333,6 +346,8 @@ plot_fit_data <- function(data_to_plot,
                                 lwd = line_widths,
                                 stringsAsFactors = FALSE),
                      by = "dist")
+  names(use_colors) <- unique_dists
+  names(unique_labels) <- unique_dists
   res <- 
     ggplot2::ggplot(data_to_plot,
                     ggplot2::aes(x = time, y = est, color = dist)) + 
@@ -340,16 +355,15 @@ plot_fit_data <- function(data_to_plot,
       ggplot2::geom_step(ggplot2::aes(x = time, y = est), 
                          data = dplyr::filter_(data_to_plot, ~ dist == "km"), 
                          col = "black", 
-                         lwd = 1.5) +
-      ggplot2::scale_color_manual(name = unique_dists, 
-                                  labels = unique_labels,
+                         lwd = km_width) +
+      ggplot2::scale_color_manual(labels = unique_labels,
                                   values = use_colors) 
   if(logy) res <- res + ggplot2::scale_y_log10()
   if(!is.infinite(max_scaled_time) & !missing(x_axis_gap)){
     breaks <- seq(from = 0, to = max_scaled_time, by = x_axis_gap)
     res <- res + ggplot2::scale_x_continuous(breaks = breaks)
   }
-  res <- res + ggplot2::labs(y = type, x = time_label, title = title)
+  res <- res + ggplot2::labs(y = plot_type, x = time_label, title = title)
   res <- res + ggplot2::theme(legend.position = legend_loc)
   res
 }
@@ -376,5 +390,69 @@ extract_fits <- function(x) {
   }
 }
 
-
-
+#' Title
+#'
+#' @param fit_tibble the output of [survival_fits_from_tabular()].
+#' @param treatment the treatment for which we want to plot.
+#' @param set_name subset name for all but the Kaplan-Meier curve.
+#' @param type PFS or OS
+#' @param set_for_km subset name for the Kaplan-Meier curve.
+#' @param B_ci number of simulations to use for confidence intervals
+#'   for `flexsurvreg` objects; becomes the `B` of 
+#'   [summary.flexsurvreg()]
+#' @param ... additional parameters to pass to [plot_fit_data()]
+#'
+#' @return a list of two `ggplot` plots - one for survival and one
+#'   for cumulative hazard
+#' @export
+#'
+#' @examples
+plot_fit_tibble <-
+  function(fit_tibble, treatment, set_name, type, 
+           set_for_km = "all", B_ci = 100, ...){
+    partial1 <- 
+      dplyr::filter_(fit_tibble, 
+                     lazyeval::interp(~type == var, var = type),
+                     lazyeval::interp(~treatment == var, var = treatment)
+                     )
+    not_km <- 
+      partial1 %>%
+      dplyr::filter_(lazyeval::interp(~set_name == var, var = set_name),
+                      ~ dist != "km")
+    time_subtract <- unique(not_km$time_subtract)
+    if(length(time_subtract) > 1)
+      stop("more than one time_subtract specified - doesn't make sense")
+    for_km <- partial1 %>%
+      dplyr::filter_(~dist == "km", 
+                     lazyeval::interp(~set_name == var, var = set_for_km))
+    
+    if(unique(not_km$set_name) != set_for_km){
+    not_km$fit <- 
+      lapply(1:nrow(not_km), 
+             function(i){
+               heemod::join(for_km$fit[[1]],
+                            not_km$fit[[i]],
+                            at = time_subtract) 
+             }
+      )
+    }
+    not_km_plot_data <- lapply(1:nrow(not_km),
+          function(i){
+            x <- not_km[i,]
+            prepare_plot_data_from_fit_tibble(x, B_ci = B_ci) %>%
+              dplyr::filter(time > x$time_subtract)
+          })
+    not_km_plot_data_2 <- dplyr::bind_rows(not_km_plot_data)
+    km_plot_data <- prepare_plot_data_from_fit_tibble(for_km)
+    fit_data <- dplyr::bind_rows(km_plot_data, not_km_plot_data_2)
+    fit_data$subset_name <- "for_plot"
+    res_surv <- plot_fit_data(fit_data, plot_type = "survival", ...)
+    res_cumhaz <- plot_fit_data(fit_data, plot_type = "cumulative hazard", ...)
+    if(!is.na(time_subtract) && time_subtract != 0){
+      res_surv <- 
+        res_surv + ggplot2::geom_vline(xintercept = time_subtract, lty = 2)
+      res_cumhaz <- 
+        res_cumhaz + ggplot2::geom_vline(xintercept = time_subtract, lty = 2)
+    }
+    list(survival = res_surv, cumhaz = res_cumhaz)
+    }

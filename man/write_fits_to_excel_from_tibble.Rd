@@ -5,7 +5,7 @@
 \title{Write fit information to an Excel workbook.}
 \usage{
 write_fits_to_excel_from_tibble(fit_tibble, wb, skip_at_start = 3,
-  skip_between = 1, alignment = c("horizontal", "vertical"))
+  skip_between = 1, alignment = c("horizontal", "vertical"), B_ci = 100)
 }
 \arguments{
 \item{fit_tibble}{a tibble of fits}
@@ -17,6 +17,10 @@ write_fits_to_excel_from_tibble(fit_tibble, wb, skip_at_start = 3,
 \item{skip_between}{how many lines to skip between output sections}
 
 \item{alignment}{either "horizontal" or "vertical"}
+
+\item{B_ci}{number of simulations to use for confidence intervals
+for \code{flexsurvreg} objects; becomes the \code{B} of
+\code{\link[=summary.flexsurvreg]{summary.flexsurvreg()}}}
 }
 \value{
 data suitable for plotting, invisibly.

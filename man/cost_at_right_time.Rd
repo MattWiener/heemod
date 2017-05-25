@@ -13,7 +13,7 @@ cost_at_right_time(cost, age, cycle, at_age, at_cycle)
 
 \item{cycle}{the cycle}
 
-\item{at_age}{at what age should the cost be incurred}
+\item{at_age}{at what age should the cost be incurred?}
 
 \item{at_cycle}{in what cycle should cost be incurred?}
 }

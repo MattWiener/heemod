@@ -4,10 +4,14 @@
 \alias{prepare_plot_data_from_fit_tibble}
 \title{Prepare fit data for plotting}
 \usage{
-prepare_plot_data_from_fit_tibble(fit_tib)
+prepare_plot_data_from_fit_tibble(fit_tib, B_ci = 100)
 }
 \arguments{
 \item{fit_tib}{a tibble containing fits}
+
+\item{B_ci}{number of simulations to use for confidence intervals
+for \code{flexsurvreg} objects; becomes the \code{B} of
+\code{\link[=summary.flexsurvreg]{summary.flexsurvreg()}}}
 }
 \value{
 a tibble with the necessary data

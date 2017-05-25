@@ -485,3 +485,40 @@ summary.surv_shift <-
     res$time <- res$time + object$shift
     res
     }
+
+summary.surv_projection <-
+  function(object, summary_type = c("plot", "standard"), 
+           type = c("survival", "cumhaz"), ...){
+    summary_type <- match.arg(summary_type)
+    res1 <- summary(object$dist1, ...)
+    res2 <- summary(object$dist2, ...)
+    if(inherits(res1, "summary.survfit")){
+      res1 <- data.frame(res1[c("time", "surv", "lower", "upper")])
+      names(res1) <- c("time", "est", "lcl", "ucl")
+    }
+    if(inherits(res2, "summary.survfit")){
+      res2 <- data.frame(res1[c("time", "surv", "lower", "upper")])
+      names(res2) <- c("time", "est", "lcl", "ucl")
+    }
+    surv1_p_at <- eval_surv(
+      object$dist1,
+      time = object$at 
+    )
+    surv2_p_at <- eval_surv(
+      object$dist2,
+      time = object$at,
+      .internal = TRUE)
+    res1 <- res1[!is.na(res1$est),]
+    res2 <- res2[!is.na(res2$est),]
+    res1 <- dplyr::filter(res1, time < object$at)
+    res2 <- dplyr::filter(res2, time >= object$at)
+    time_col <- match("time", names(res2))
+    res2[, -time_col] <-
+      res2[, -time_col] * surv1_p_at/surv2_p_at
+    res <- dplyr::bind_rows(res1, res2) %>%
+      dplyr::arrange(time)
+    if(type == "cumhaz")
+      res[, -time_col] <- -log(res[, -time_col])
+    res
+          }
+  

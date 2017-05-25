@@ -3,7 +3,7 @@
 #' @param cost cost, in units when incurred
 #' @param age age at a given cycle
 #' @param cycle the cycle
-#' @param at_age at what age should the cost be incurred
+#' @param at_age at what age should the cost be incurred?
 #' @param at_cycle in what cycle should cost be incurred?
 #'
 #' @return  0 except when the age or cycle condition is met; 

@@ -4,17 +4,16 @@
 \alias{plot_fit_data}
 \title{Plot fit data}
 \usage{
-plot_fit_data(data_to_plot, type = c("survival", "cumulative hazard"),
-  logy = FALSE, scale_time = 1, time_label = "time",
-  max_scaled_time = Inf, title = NULL, x_axis_gap, legend_loc = "right")
+plot_fit_data(data_to_plot, plot_type = c("survival", "cumulative hazard"),
+  scale_time = 1, time_label = "time", max_scaled_time = Inf,
+  title = NULL, x_axis_gap, legend_loc = "right", logy = NULL,
+  km_width = 1.25)
 }
 \arguments{
 \item{data_to_plot}{a data frame from
 \code{\link[=prepare_plot_data_from_fit_tibble]{prepare_plot_data_from_fit_tibble()}}}
 
-\item{type}{\code{survival} or \code{cumulative hazard}}
-
-\item{logy}{should the \code{y} axis be on the logarithmic scale?}
+\item{plot_type}{\code{survival} or \code{cumulative hazard}}
 
 \item{scale_time}{times are multiplied by this.  So if your
 fit was done on a time scale of days, and you want to plot
@@ -29,6 +28,12 @@ by weeks, set this to 1/7.}
 \item{x_axis_gap}{distance between breaks on the x axis}
 
 \item{legend_loc}{location for legend - "top", "bottom", "left", or "right"}
+
+\item{logy}{should the \code{y} axis be on the logarithmic scale?  By default,
+it is TRUE for survival curves and FALSE for cumulative hazard.}
+
+\item{km_width}{width for the Kaplan-Meier curve line;
+approximately 0.5 seems to be the standard width for lines}
 }
 \value{
 a \code{ggplot2} plot object
