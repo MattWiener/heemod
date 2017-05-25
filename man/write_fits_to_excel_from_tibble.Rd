@@ -20,7 +20,7 @@ write_fits_to_excel_from_tibble(fit_tibble, wb, skip_at_start = 3,
 
 \item{B_ci}{number of simulations to use for confidence intervals
 for \code{flexsurvreg} objects; becomes the \code{B} of
-\code{\link[=summary.flexsurvreg]{summary.flexsurvreg()}}}
+\code{\link[flexsurv:summary.flexsurvreg]{flexsurv::summary.flexsurvreg()}}}
 }
 \value{
 data suitable for plotting, invisibly.

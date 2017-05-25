@@ -20,7 +20,7 @@ plot_fit_tibble(fit_tibble, treatment, set_name, type, set_for_km = "all",
 
 \item{B_ci}{number of simulations to use for confidence intervals
 for \code{flexsurvreg} objects; becomes the \code{B} of
-\code{\link[=summary.flexsurvreg]{summary.flexsurvreg()}}}
+\code{\link[flexsurv:summary.flexsurvreg]{flexsurv::summary.flexsurvreg()}}}
 
 \item{...}{additional parameters to pass to \code{\link[=plot_fit_data]{plot_fit_data()}}}
 }

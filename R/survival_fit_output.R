@@ -53,7 +53,7 @@ prepare_fit_info <- function(fit_list){
 #' @param alignment either "horizontal" or "vertical"
 #' @param B_ci number of simulations to use for confidence intervals
 #'   for `flexsurvreg` objects; becomes the `B` of 
-#'   [summary.flexsurvreg()]
+#'   [flexsurv::summary.flexsurvreg()]
 #' @details Called for the side effect of creating Excel output.
 #' 
 #' `alignment = 'vertical'` means sections are written one after
@@ -225,7 +225,7 @@ send_info_to_workbook <-
 #' @param fit_tib a tibble containing fits
 #' @param B_ci number of simulations to use for confidence intervals
 #'   for `flexsurvreg` objects; becomes the `B` of 
-#'   [summary.flexsurvreg()]
+#'   [flexsurv::summary.flexsurvreg()]
 #' @return a tibble with the necessary data
 #' @export
 #'
@@ -399,7 +399,7 @@ extract_fits <- function(x) {
 #' @param set_for_km subset name for the Kaplan-Meier curve.
 #' @param B_ci number of simulations to use for confidence intervals
 #'   for `flexsurvreg` objects; becomes the `B` of 
-#'   [summary.flexsurvreg()]
+#'   [flexsurv::summary.flexsurvreg()]
 #' @param ... additional parameters to pass to [plot_fit_data()]
 #'
 #' @return a list of two `ggplot` plots - one for survival and one

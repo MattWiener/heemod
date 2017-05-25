@@ -11,7 +11,7 @@ prepare_plot_data_from_fit_tibble(fit_tib, B_ci = 100)
 
 \item{B_ci}{number of simulations to use for confidence intervals
 for \code{flexsurvreg} objects; becomes the \code{B} of
-\code{\link[=summary.flexsurvreg]{summary.flexsurvreg()}}}
+\code{\link[flexsurv:summary.flexsurvreg]{flexsurv::summary.flexsurvreg()}}}
 }
 \value{
 a tibble with the necessary data
