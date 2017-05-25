@@ -512,6 +512,13 @@ compute_vals_for_adv_ev_ <- function(ae_table){
     stop("adverse events table must have columns ",
          paste(required_names, collapse = ", ")
     )
+  val_names <- setdiff(names(ae_table),
+                       required_names)
+  if(length(val_names) == 0)
+    stop("must have some column for a value ", 
+         "other than required columns: ",
+         paste(required_names, collapse = ", ")
+         )
   if(any(missing_prob <- is.na(ae_table$prob))){
     ae_table$prob[is.na(ae_table$prob)] <- 0
     warning("some AE probabilities are missing in the table; ",
@@ -521,7 +528,7 @@ compute_vals_for_adv_ev_ <- function(ae_table){
   ##   if some are actually undefined, make them 0
   other_names <- setdiff(names(ae_table), required_names)
   values <- ae_table[, c("ae", other_names)]
-  values <- values[complete.cases(values), ]
+  values <- values[stats::complete.cases(values), ]
   if(any(is.na(ae_table[, -match(required_names, names(ae_table))]))){
     ae_table <- dplyr::left_join(ae_table[, required_names], 
                                  values, 
@@ -586,6 +593,14 @@ ae_val <- function(ae_table, treatment, value){
          treatment, 
          " and value ",
          value,
-         ".")
+         ".\n",
+         "Treatments available: ",
+         paste(unique(ae_table$treatment), collapse = ", "),
+         "\n",
+         "Values available: ",
+         paste(setdiff(names(ae_table), 
+                       c("treatment", "ae", "prob")),
+               collapse = ", ")
+    )
   res
 }

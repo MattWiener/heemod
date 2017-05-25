@@ -18,7 +18,9 @@ correct <- tibble::tribble(
 expect_equivalent(as.data.frame(res1), 
                   as.data.frame(correct)
 )
-
+expect_error(compute_vals_for_adv_ev(AEs[, c("treatment", "ae",
+                                             "prob")]),
+             "must have some column for a value")
 AEs2 <- AEs
 AEs2$prob <- c(0.1, 0.1, 0.2, NA)
 
@@ -46,6 +48,7 @@ expect_error(ae_val(AEs, "C", "cost"),
              "no AE information returned")
 expect_error(ae_val(AEs, "A", "novalue"),
              "no column")
+
   }
 )
 
