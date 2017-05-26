@@ -390,7 +390,7 @@ extract_fits <- function(x) {
   }
 }
 
-#' Title
+#' Assemble data from a fit tibble and plot
 #'
 #' @param fit_tibble the output of [survival_fits_from_tabular()].
 #' @param treatment the treatment for which we want to plot.
@@ -410,6 +410,38 @@ extract_fits <- function(x) {
 plot_fit_tibble <-
   function(fit_tibble, treatment, set_name, type, 
            set_for_km = "all", B_ci = 100, ...){
+    required_cols <- c("treatment", "type", "set_name", "fit") 
+    present_cols <- required_cols %in% names(fit_tibble)
+    if(!all(present_cols))
+      stop("input fit_tibble is missing required column",
+           plur(sum(!present_cols)),
+           ": ",
+           paste(required_cols[!present_cols], collapse = ", ")
+           )
+    if(length(treatment) > 1 | length(set_name) > 1 | length(type) > 1)
+      stop("can only enter a single treatment, set_name, and type")
+    if(!(treatment %in% fit_tibble$treatment))
+      stop("treatment '",
+           treatment,
+           "' not present in entered fit_tibble.\n",
+           "Available treatments: ",
+           paste(unique(fit_tibble$treatment), collapse = ", ")
+           )
+    if(!(type %in% fit_tibble$type))
+      stop("type '",
+           type,
+           "' not present in entered fit_tibble.\n",
+           "Available types: ",
+           paste(unique(fit_tibble$type), collapse = ", ")
+           )
+    if(!(set_name %in% fit_tibble$set_name))
+      stop("set_name '",
+           set_name,
+           "' not present in entered fit tibble.\n",
+           "Available set_names: ",
+           paste(unique(fit_tibble$set_name), collapse = ", ")
+           )
+
     partial1 <- 
       dplyr::filter_(fit_tibble, 
                      lazyeval::interp(~type == var, var = type),
@@ -425,7 +457,11 @@ plot_fit_tibble <-
     for_km <- partial1 %>%
       dplyr::filter_(~dist == "km", 
                      lazyeval::interp(~set_name == var, var = set_for_km))
-    
+    if(nrow(for_km) == 0)
+      stop("no Kaplan-Meier curve data using given set_for_km: '",
+           set_for_km,
+           "'"
+           )
     if(unique(not_km$set_name) != set_for_km){
     not_km$fit <- 
       lapply(1:nrow(not_km), 

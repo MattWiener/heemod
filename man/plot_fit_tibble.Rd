@@ -2,7 +2,7 @@
 % Please edit documentation in R/survival_fit_output.R
 \name{plot_fit_tibble}
 \alias{plot_fit_tibble}
-\title{Title}
+\title{Assemble data from a fit tibble and plot}
 \usage{
 plot_fit_tibble(fit_tibble, treatment, set_name, type, set_for_km = "all",
   B_ci = 100, ...)
@@ -29,5 +29,5 @@ a list of two \code{ggplot} plots - one for survival and one
 for cumulative hazard
 }
 \description{
-Title
+Assemble data from a fit tibble and plot
 }
