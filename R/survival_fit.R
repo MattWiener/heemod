@@ -304,8 +304,23 @@ get_set_definitions <- function(data_dir, file_name = "set_definitions"){
          )
   ## just in case we have only logicals
   set_definitions$condition <- as.character(set_definitions$condition)
+
   if("type" %in% names(set_definitions))
     set_definitions$type <- toupper(set_definitions$type)
+  else{
+    num_rows <- nrow(set_definitions)
+    set_definitions <- rbind(set_definitions, set_definitions)
+    set_definitions$type <- rep(c("PFS", "OS"), each = num_rows)
+    type_col <- match("type", names(set_definitions))
+    set_definitions <- 
+      set_definitions[ c(type_col, setdiff(1:ncol(set_definitions), type_col))]
+  }
+  set_definitions <- set_definitions[!duplicated(set_definitions), ]
+  dups <- duplicated(set_definitions[, c("treatment", "type", "set_name")])
+  if(any(dups)){
+    stop("it appears you have multiple definitions of some sets: ",
+         set_definitions[dups, c("treatment", "type", "set_name", "condition")])
+  }
   set_definitions
 }
 

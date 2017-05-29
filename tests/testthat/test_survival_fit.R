@@ -71,10 +71,14 @@ test_that("reading set definitions works",
               get_set_definitions(system.file("tabular/surv", package = "heemod"),
                                   "set_definitions_1.csv")
             expect_identical(example_1,
-                             data.frame(treatment = rep(c("fake_treatment", "not_real"),2),
-                                        set_name = rep(c("all", "time.gt.100"), each = 2),
-                                        condition = rep(c("TRUE", "time > 100"), each = 2),
-                                        subtract_time = rep(as.integer(c(NA, 100)), each = 2),
+                             data.frame(type = rep(c("PFS", "OS"), each = 4),
+                                        treatment = rep(c("fake_treatment", "not_real"),4),
+                                        set_name = rep(rep(c("all", "time.gt.100"), each = 2),
+                                                       2),
+                                        condition = rep(rep(c("TRUE", "time > 100"), each = 2),
+                                                        2),
+                                        subtract_time = rep(rep(as.integer(c(NA, 100)), each = 2),
+                                                            2),
                                         stringsAsFactors = FALSE
                                         )
                              )
@@ -82,15 +86,22 @@ test_that("reading set definitions works",
               get_set_definitions(system.file("tabular/surv", package = "heemod"),
                                   "set_definitions_2.csv")
             expect_identical(example_2,
-                             data.frame(treatment = "fake_treatment",
-                                        set_name = "all", 
-                                        condition = "TRUE",
-                                        stringsAsFactors = FALSE))
+                             data.frame(type = c("PFS", "OS"), 
+                                        treatment = rep("fake_treatment", 2),
+                                        set_name = rep("all", 2), 
+                                        condition = rep("TRUE", 2),
+                                        stringsAsFactors = FALSE)
+                             )
             expect_error(get_set_definitions(system.file("tabular/surv", package = "heemod"),
                                              "set_definitions_error_1.csv"),
                          "set_definitions file missing column(s): treatment, set_name",
-                         fixed = TRUE)
-          }
+                         fixed = TRUE
+                         )
+            expect_error(get_set_definitions(system.file("tabular/surv", package = "heemod"),
+                                             "set_definitions_3.csv"),
+                         "multiple definitions of some sets"
+                         )
+            }
           )
 
 

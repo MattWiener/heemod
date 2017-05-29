@@ -481,7 +481,7 @@ plot_fit_tibble <-
     not_km_plot_data_2 <- dplyr::bind_rows(not_km_plot_data)
     km_plot_data <- prepare_plot_data_from_fit_tibble(for_km)
     fit_data <- dplyr::bind_rows(km_plot_data, not_km_plot_data_2)
-    fit_data$subset_name <- "for_plot"
+    fit_data$set_name <- "for_plot"
     res_surv <- plot_fit_data(fit_data, plot_type = "survival", ...)
     res_cumhaz <- plot_fit_data(fit_data, plot_type = "cumulative hazard", ...)
     if(!is.na(time_subtract) && time_subtract != 0){
