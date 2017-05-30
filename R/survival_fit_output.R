@@ -370,11 +370,13 @@ plot_fit_data <- function(data_to_plot,
                     ggplot2::aes(x = time, y = est, color = dist)) + 
       ggplot2::geom_line(data = data_to_plot) +
       ggplot2::geom_step(ggplot2::aes(x = time, y = est), 
-                         data = dplyr::filter_(data_to_plot, ~ dist == "km"), 
+                         data = dplyr::filter_(data_to_plot, 
+                                               ~ dist == "km"), 
                          col = "black", 
                          lwd = km_width) +
       ggplot2::scale_color_manual(labels = unique_labels,
-                                  values = use_colors) 
+                                  values = use_colors) +
+      ggplot2::guides(color = guide_legend(override.aes = list(size = 1.5)))
   if(logy) res <- res + ggplot2::scale_y_log10()
   if(!is.infinite(max_scaled_time) & !missing(x_axis_gap)){
     breaks <- seq(from = 0, to = max_scaled_time, by = x_axis_gap)
