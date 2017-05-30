@@ -505,7 +505,10 @@ plot_fit_tibble <-
     fit_data$set_name <- "for_plot"
     res_surv <- plot_fit_data(fit_data, plot_type = "survival", 
                               scale_time = scale_time, ...)
-    res_cumhaz <- plot_fit_data(fit_data, plot_type = "cumulative hazard", ...)
+    res_cumhaz <- plot_fit_data(fit_data, 
+                                plot_type = "cumulative hazard", 
+                                scale_time = scale_time, 
+                                ...)
     if(!is.na(time_subtract) && time_subtract != 0){
       res_surv <- 
         res_surv + 
