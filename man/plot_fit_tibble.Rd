@@ -5,7 +5,7 @@
 \title{Assemble data from a fit tibble and plot}
 \usage{
 plot_fit_tibble(fit_tibble, treatment, set_name, type, set_for_km = "all",
-  B_ci = 100, ...)
+  B_ci = 100, scale_time = 1, ...)
 }
 \arguments{
 \item{fit_tibble}{the output of \code{\link[=survival_fits_from_tabular]{survival_fits_from_tabular()}}.}
@@ -21,6 +21,10 @@ plot_fit_tibble(fit_tibble, treatment, set_name, type, set_for_km = "all",
 \item{B_ci}{number of simulations to use for confidence intervals
 for \code{flexsurvreg} objects; becomes the \code{B} of
 \code{\link[flexsurv:summary.flexsurvreg]{flexsurv::summary.flexsurvreg()}}}
+
+\item{scale_time}{times are multiplied by this.  So if your
+fit was done on a time scale of days, and you want to plot
+by weeks, set this to 1/7}
 
 \item{...}{additional parameters to pass to \code{\link[=plot_fit_data]{plot_fit_data()}}}
 }

@@ -286,6 +286,9 @@ summary_helper <- function(fit, type, ...){
 #' @param data_to_plot a data frame from 
 #'   [prepare_plot_data_from_fit_tibble()]
 #' @param plot_type `survival` or `cumulative hazard`
+#' @param plot_dists which distributions should be included
+#'   in the plot.   If NULL, all distributions in the data
+#'   are included.
 #' @param scale_time times are multiplied by this.  So if your
 #'   fit was done on a time scale of days, and you want to plot
 #'   by weeks, set this to 1/7.
@@ -304,6 +307,7 @@ summary_helper <- function(fit, type, ...){
 #' @examples
 plot_fit_data <- function(data_to_plot, 
                           plot_type = c("survival", "cumulative hazard"),
+                          plot_dists = NULL, 
                           scale_time = 1,
                           time_label = "time",
                           max_scaled_time = Inf,
@@ -340,7 +344,20 @@ plot_fit_data <- function(data_to_plot,
   unique_labels[unique_dists == "km"] <- "Kaplan-Meier"
   line_widths <- rep(1, length(unique_dists))
   line_widths[unique_dists == "km"] <- 1.5
-  data_to_plot <- 
+  if(!is.null(plot_dists)){
+    not_present <- setdiff(plot_dists, data_to_plot$dist)
+    if(length(not_present) > 0)
+      warning("element",
+              plur(length(not_present)),
+              " of plot_dists not in the data to plot: ",
+              paste(not_present, collapse = ", "),
+              ".\n",
+              "Available distributions: ",
+              paste(unique(data_to_plot$dist), collapse = ", ")
+      )
+  data_to_plot <- dplyr::filter_(data_to_plot, ~dist %in% plot_dists)
+  }
+    data_to_plot <- 
     dplyr::left_join(data_to_plot,
                      data.frame(dist = unique_dists,
                                 lwd = line_widths,
@@ -400,6 +417,9 @@ extract_fits <- function(x) {
 #' @param B_ci number of simulations to use for confidence intervals
 #'   for `flexsurvreg` objects; becomes the `B` of 
 #'   [flexsurv::summary.flexsurvreg()]
+#' @param scale_time times are multiplied by this.  So if your
+#'   fit was done on a time scale of days, and you want to plot
+#'   by weeks, set this to 1/7
 #' @param ... additional parameters to pass to [plot_fit_data()]
 #'
 #' @return a list of two `ggplot` plots - one for survival and one
@@ -409,7 +429,8 @@ extract_fits <- function(x) {
 #' @examples
 plot_fit_tibble <-
   function(fit_tibble, treatment, set_name, type, 
-           set_for_km = "all", B_ci = 100, ...){
+           set_for_km = "all", B_ci = 100, 
+           scale_time = 1, ...){
     required_cols <- c("treatment", "type", "set_name", "fit") 
     present_cols <- required_cols %in% names(fit_tibble)
     if(!all(present_cols))
@@ -482,13 +503,18 @@ plot_fit_tibble <-
     km_plot_data <- prepare_plot_data_from_fit_tibble(for_km)
     fit_data <- dplyr::bind_rows(km_plot_data, not_km_plot_data_2)
     fit_data$set_name <- "for_plot"
-    res_surv <- plot_fit_data(fit_data, plot_type = "survival", ...)
+    res_surv <- plot_fit_data(fit_data, plot_type = "survival", 
+                              scale_time = scale_time, ...)
     res_cumhaz <- plot_fit_data(fit_data, plot_type = "cumulative hazard", ...)
     if(!is.na(time_subtract) && time_subtract != 0){
       res_surv <- 
-        res_surv + ggplot2::geom_vline(xintercept = time_subtract, lty = 2)
+        res_surv + 
+        ggplot2::geom_vline(xintercept = time_subtract * scale_time, 
+                            lty = 2)
       res_cumhaz <- 
-        res_cumhaz + ggplot2::geom_vline(xintercept = time_subtract, lty = 2)
+        res_cumhaz + 
+        ggplot2::geom_vline(xintercept = time_subtract * scale_time, 
+                            lty = 2)
     }
     list(survival = res_surv, cumhaz = res_cumhaz)
     }

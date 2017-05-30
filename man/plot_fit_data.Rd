@@ -5,15 +5,19 @@
 \title{Plot fit data}
 \usage{
 plot_fit_data(data_to_plot, plot_type = c("survival", "cumulative hazard"),
-  scale_time = 1, time_label = "time", max_scaled_time = Inf,
-  title = NULL, x_axis_gap, legend_loc = "right", logy = NULL,
-  km_width = 1.25)
+  plot_dists = NULL, scale_time = 1, time_label = "time",
+  max_scaled_time = Inf, title = NULL, x_axis_gap, legend_loc = "right",
+  logy = NULL, km_width = 1.25)
 }
 \arguments{
 \item{data_to_plot}{a data frame from
 \code{\link[=prepare_plot_data_from_fit_tibble]{prepare_plot_data_from_fit_tibble()}}}
 
 \item{plot_type}{\code{survival} or \code{cumulative hazard}}
+
+\item{plot_dists}{which distributions should be included
+in the plot.   If NULL, all distributions in the data
+are included.}
 
 \item{scale_time}{times are multiplied by this.  So if your
 fit was done on a time scale of days, and you want to plot
