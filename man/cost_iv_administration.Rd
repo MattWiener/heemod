@@ -19,6 +19,11 @@ the cost
 \description{
 Cost of administration for an intravenous treatment
 }
+\details{
+Simple formula:  cost for the first time unit (prorated if
+total time is less than one unit) plus the prorated cost for
+additional units.
+}
 \examples{
 cost_iv_administration(0.5, 100, 20) # = 50
 cost_iv_administration(1.5, 100, 20) # = 110

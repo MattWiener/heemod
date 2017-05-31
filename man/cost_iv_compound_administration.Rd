@@ -25,7 +25,8 @@ Cost of administration for an intravenous treatment
 \details{
 \code{data_table} must have columns \code{compound}, \code{param},
 and \code{value}.   The required values are found in \code{data_table}
-using \code{\link[=look_up]{look_up()}}.
+using \code{\link[=look_up]{look_up()}}.   Then the values are summed using
+\code{\link[=cost_iv_administration]{cost_iv_administration()}}.
 }
 \examples{
 exampleParams <- 

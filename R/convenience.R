@@ -441,6 +441,9 @@ find_least_cost_partition <-
 #' @param cost_addl_units cost for the second time unit
 #'
 #' @return the cost
+#' @details Simple formula:  cost for the first time unit (prorated if 
+#'   total time is less than one unit) plus the prorated cost for
+#'   additional units.
 #' @export
 #' @examples
 #' cost_iv_administration(0.5, 100, 20) # = 50
@@ -461,7 +464,9 @@ cost_iv_administration <-
 #'   in data_table
 #' @details `data_table` must have columns `compound`, `param`,
 #'   and `value`.   The required values are found in `data_table`
-#'   using [look_up()].
+#'   using [look_up()].   Then the values are summed using
+#'   [cost_iv_administration()].
+#'   
 #' @return  the cost
 #' @export
 #'
