@@ -286,9 +286,10 @@ summary_helper <- function(fit, type, ...){
 #' @param data_to_plot a data frame from 
 #'   [prepare_plot_data_from_fit_tibble()]
 #' @param plot_type `survival` or `cumulative hazard`
-#' @param plot_dists which distributions should be included
+#' @param plot_groups which groups should be included
 #'   in the plot.   If NULL, all distributions in the data
 #'   are included.
+#' @param groups column name to use for grouping.
 #' @param scale_time times are multiplied by this.  So if your
 #'   fit was done on a time scale of days, and you want to plot
 #'   by weeks, set this to 1/7.
@@ -306,8 +307,10 @@ summary_helper <- function(fit, type, ...){
 #'
 #' @examples
 plot_fit_data <- function(data_to_plot, 
-                          plot_type = c("survival", "cumulative hazard"),
-                          plot_dists = NULL, 
+                          plot_type = c("survival", "cumulative hazard",
+                                        "log cumulative hazard"),
+                          plot_groups = NULL, 
+                          groups = "dist",
                           scale_time = 1,
                           time_label = "time",
                           max_scaled_time = Inf,
@@ -325,9 +328,13 @@ plot_fit_data <- function(data_to_plot,
   if(!("km" %in% unique(data_to_plot$dist)))
     stop("no 'km' in dist column - but Kaplan-Meier curve is required")
   plot_type <- match.arg(plot_type)
-  if(is.null(logy)){
-    logy <- ifelse(plot_type == "survival", TRUE, FALSE)
-  }
+  default_logy <- data.frame(
+    plot_type = c("survival", "cumulative hazard", "log cumulative hazard"),
+    logy = c(TRUE, FALSE, TRUE)
+  )
+  if(is.null(logy))
+    logy <- default_logy$logy[match(plot_type, default_logy$plot_type)]
+  
   stopifnot(legend_loc %in% c("right", "left", "bottom", "top"))
   data_to_plot <- dplyr::filter_(data_to_plot, 
                                  lazyeval::interp(~fn == var, 
@@ -335,49 +342,68 @@ plot_fit_data <- function(data_to_plot,
   data_to_plot$time <- data_to_plot$time * scale_time
   data_to_plot <- dplyr::filter_(data_to_plot, ~ time <= max_scaled_time)
 
-  unique_dists <- unique(data_to_plot$dist)
+  unique_groups <- unique(data_to_plot[[groups]])
   use_colors <- 
-    grDevices::hcl(h = seq(15, 375, length = length(unique_dists) + 1),
-                   l = 65, c = 100)[1:length(unique_dists)]
-  use_colors[unique_dists == "km"] <- "black"
-  unique_labels <- unique_dists
-  unique_labels[unique_dists == "km"] <- "Kaplan-Meier"
-  line_widths <- rep(1, length(unique_dists))
-  line_widths[unique_dists == "km"] <- 1.5
-  if(!is.null(plot_dists)){
-    not_present <- setdiff(plot_dists, data_to_plot$dist)
+    grDevices::hcl(h = seq(15, 375, length = length(unique_groups) + 1),
+                   l = 65, c = 100)[1:length(unique_groups)]
+
+  use_colors[unique_groups == "km"] <- "black"
+
+  unique_labels <- unique_groups
+  unique_labels[unique_groups == "km"] <- "Kaplan-Meier"
+  line_widths <- rep(1, length(unique_groups))
+  line_widths[unique_groups == "km"] <- 1.5
+  if(!is.null(plot_groups)){
+    not_present <- setdiff(plot_groups, data_to_plot[[groups]])
     if(length(not_present) > 0)
       warning("element",
               plur(length(not_present)),
-              " of plot_dists not in the data to plot: ",
+              " of column ",
+              groups, 
+              " not in the data to plot: ",
               paste(not_present, collapse = ", "),
               ".\n",
-              "Available distributions: ",
-              paste(unique(data_to_plot$dist), collapse = ", ")
+              "Available elements: ",
+              paste(unique(data_to_plot[[groups]]), collapse = ", ")
       )
-  data_to_plot <- dplyr::filter_(data_to_plot, ~dist %in% plot_dists)
+    filter_str <- paste(groups, "%in% c(", 
+                        paste("'",plot_groups, "'", sep = "", collapse = ", "), 
+                        ")"
+                        )
+  data_to_plot <- dplyr::filter_(data_to_plot, 
+                                 filter_str)
   }
-    data_to_plot <- 
+  seed_frame <- 
+    data.frame(unique_groups,
+               lwd = line_widths,
+               stringsAsFactors = FALSE)
+  names(seed_frame)[1] <- groups
+  data_to_plot <- 
     dplyr::left_join(data_to_plot,
-                     data.frame(dist = unique_dists,
-                                lwd = line_widths,
-                                stringsAsFactors = FALSE),
-                     by = "dist")
-  names(use_colors) <- unique_dists
-  names(unique_labels) <- unique_dists
+                     seed_frame,
+                     by = groups)
+  names(use_colors) <- unique_groups
+  names(unique_labels) <- unique_groups
+  ## I'm sure there's a better way to do this with aes_string
+  ##   or something, but haven't figured it out
+  ## names(data_to_plot)[names(data_to_plot) == groups] <- "groups"
   res <- 
     ggplot2::ggplot(data_to_plot,
-                    ggplot2::aes(x = time, y = est, color = dist)) + 
+                    ggplot2::aes_string(x = "time", y = "est", color = groups)) + 
       ggplot2::geom_line(data = data_to_plot) +
-      ggplot2::geom_step(ggplot2::aes(x = time, y = est), 
-                         data = dplyr::filter_(data_to_plot, 
-                                               ~ dist == "km"), 
-                         col = "black", 
-                         lwd = km_width) +
       ggplot2::scale_color_manual(labels = unique_labels,
                                   values = use_colors) +
       ggplot2::guides(color = guide_legend(override.aes = list(size = 1.5)))
+  if(groups == "dist")
+    res <- res + 
+    ggplot2::geom_step(ggplot2::aes(x = time, y = est), 
+                       data = dplyr::filter_(data_to_plot, 
+                                             ~ groups == "km"), 
+                       col = "black", 
+                       lwd = km_width)
   if(logy) res <- res + ggplot2::scale_y_log10()
+  if(plot_type == "log cumulative_hazard") 
+    res <- res + ggplot2::scale_x_log10()
   if(!is.infinite(max_scaled_time) & !missing(x_axis_gap)){
     breaks <- seq(from = 0, to = max_scaled_time, by = x_axis_gap)
     res <- res + ggplot2::scale_x_continuous(breaks = breaks)
@@ -433,37 +459,9 @@ plot_fit_tibble <-
   function(fit_tibble, treatment, set_name, type, 
            set_for_km = "all", B_ci = 100, 
            scale_time = 1, ...){
-    required_cols <- c("treatment", "type", "set_name", "fit") 
-    present_cols <- required_cols %in% names(fit_tibble)
-    if(!all(present_cols))
-      stop("input fit_tibble is missing required column",
-           plur(sum(!present_cols)),
-           ": ",
-           paste(required_cols[!present_cols], collapse = ", ")
-           )
+    check_plot_tibble_input(fit_tibble, treatment, set_name, type)
     if(length(treatment) > 1 | length(set_name) > 1 | length(type) > 1)
       stop("can only enter a single treatment, set_name, and type")
-    if(!(treatment %in% fit_tibble$treatment))
-      stop("treatment '",
-           treatment,
-           "' not present in entered fit_tibble.\n",
-           "Available treatments: ",
-           paste(unique(fit_tibble$treatment), collapse = ", ")
-           )
-    if(!(type %in% fit_tibble$type))
-      stop("type '",
-           type,
-           "' not present in entered fit_tibble.\n",
-           "Available types: ",
-           paste(unique(fit_tibble$type), collapse = ", ")
-           )
-    if(!(set_name %in% fit_tibble$set_name))
-      stop("set_name '",
-           set_name,
-           "' not present in entered fit tibble.\n",
-           "Available set_names: ",
-           paste(unique(fit_tibble$set_name), collapse = ", ")
-           )
 
     partial1 <- 
       dplyr::filter_(fit_tibble, 
@@ -511,6 +509,7 @@ plot_fit_tibble <-
                                 plot_type = "cumulative hazard", 
                                 scale_time = scale_time, 
                                 ...)
+    
     if(!is.na(time_subtract) && time_subtract != 0){
       res_surv <- 
         res_surv + 
@@ -522,4 +521,90 @@ plot_fit_tibble <-
                             lty = 2)
     }
     list(survival = res_surv, cumhaz = res_cumhaz)
+  }
+
+
+#' Assemble data from a fit tibble and plot a log cumulative hazard plot
+#'
+#' @param fit_tibble the output of [survival_fits_from_tabular()].
+#' @param treatment the treatments for which we want to plot.
+#' @param set_name subset name
+#' @param type PFS or OS
+#' @param ... additional parameters to pass to [plot_fit_data()]
+#'
+#' @return a `ggplot` plot
+#' @export
+#'
+
+plot_cloglog_fit_tibble <- 
+  function(fit_tibble, treatments, set_name, type, ...){
+    check_plot_tibble_input(fit_tibble, treatments, set_name, type)
+    ## pull out just Kaplan-Meier fits,
+    ##   with only the type we want (PFS or OS),
+    ##   and with whatever treatments we want
+    partial1 <- 
+      dplyr::filter_(fit_tibble,
+                     ~ dist == "km",
+                     lazyeval::interp(~type == var, var = type),
+                     lazyeval::interp(~treatment %in% var, var = treatments),
+                     lazyeval::interp(~set_name %in% var, var = set_name)
+      )
+    
+     km_cloglog_plot_data <- 
+       prepare_plot_data_from_fit_tibble(partial1)  %>%
+        dplyr::filter_(~fn == "cumulative hazard") %>%
+         dplyr::mutate(fn = "log cumulative hazard")
+
+    res_cloglog <- 
+      plot_fit_data(km_cloglog_plot_data, 
+                    plot_type = "log cumulative hazard",
+                    groups = "treatment",
+                    ...)
+    res_cloglog
+  }
+
+
+check_plot_tibble_input <- 
+  function(fit_tibble, treatment, set_name, type, ...){
+    required_cols <- c("treatment", "type", "set_name", "fit") 
+    present_cols <- required_cols %in% names(fit_tibble)
+    if(!all(present_cols))
+      stop("input fit_tibble is missing required column",
+           plur(sum(!present_cols)),
+           ": ",
+           paste(required_cols[!present_cols], collapse = ", ")
+      )
+    if(!all(treatment %in% fit_tibble$treatment)){
+      missing_treatment <- setdiff(treatment, fit_tibble$treatment)
+      stop("treatment",
+            plur(length(missing_treatment)),
+           " ",
+           paste(missing_treatment, collapse = ", "),
+           " not present in entered fit_tibble.\n",
+           "Available treatments: ",
+           paste(unique(fit_tibble$treatment), collapse = ", ")
+      )
     }
+    if(!all(type %in% fit_tibble$type)){
+      missing_type <- setdiff(type, fit_tibble$type)
+      stop("type",
+           plur(length(missing_type)),
+           " ",
+           paste(missing_type, collapse = ", "),
+           " not present in entered fit_tibble.\n",
+           "Available types: ",
+           paste(unique(fit_tibble$type), collapse = ", ")
+      )
+    }
+    if(!all(set_name %in% fit_tibble$set_name)){
+      missing_set <- setdiff(set_name, fit_tibble$set_name)
+      stop("set_name",
+           plur(length(missing_set)),
+           " ",
+           paste(missing_set, collapse = ", "),
+           " not present in entered fit tibble.\n",
+           "Available set_names: ",
+           paste(unique(fit_tibble$set_name), collapse = ", ")
+      )
+    }
+  }

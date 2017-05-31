@@ -65,21 +65,21 @@ test_that("fit_plot_tibble catches errors in input",
               plot_fit_tibble(fake_fit_tib,
                               treatment = "wrong_treatment",
                               set_name = "all", type = "PFS"),
-              "treatment 'wrong_treatment' not present in entered fit_tibble",
+              "treatment wrong_treatment not present in entered fit_tibble",
               fixed = TRUE
             )
             expect_error(
               plot_fit_tibble(fake_fit_tib,
                               treatment = "A",
                               set_name = "not_a_set", type = "PFS"),
-              "set_name 'not_a_set' not present in entered fit tibble",
+              "set_name not_a_set not present in entered fit tibble",
               fixed = TRUE
             )
             expect_error(
               plot_fit_tibble(fake_fit_tib,
                               treatment = "A",
                               set_name = "all", type = "PZZ"),
-              "type 'PZZ' not present in entered fit_tibble",
+              "type PZZ not present in entered fit_tibble",
               fixed = TRUE
             )
             expect_error(
