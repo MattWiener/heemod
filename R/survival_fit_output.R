@@ -402,7 +402,7 @@ plot_fit_data <- function(data_to_plot,
                        col = "black", 
                        lwd = km_width)
   if(logy) res <- res + ggplot2::scale_y_log10()
-  if(plot_type == "log cumulative_hazard") 
+  if(plot_type == "log cumulative hazard") 
     res <- res + ggplot2::scale_x_log10()
   if(!is.infinite(max_scaled_time) & !missing(x_axis_gap)){
     breaks <- seq(from = 0, to = max_scaled_time, by = x_axis_gap)
@@ -560,7 +560,13 @@ plot_cloglog_fit_tibble <-
                     plot_type = "log cumulative hazard",
                     groups = "treatment",
                     ...)
+    res_cloglog <- 
+      res_cloglog + ggplot2::geom_hline(yintercept = 1,
+                                        lty = "dashed") + 
+      geom_line(size = 1.25)
+    
     res_cloglog
+      
   }
 
 
