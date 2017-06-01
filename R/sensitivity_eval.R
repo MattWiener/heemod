@@ -51,7 +51,7 @@ run_dsa <- function(model, dsa) {
       e_newdata,
       list(unlist(lapply(
         tab$.mod,
-        function(x) x$parameters[1, dsa$variables]))[pos_par]))
+        function(x) x$complete_parameters[1, dsa$variables]))[pos_par]))
     
     names(e_newdata)[length(e_newdata)] <- n
   }
@@ -60,7 +60,8 @@ run_dsa <- function(model, dsa) {
     list_res[[i]]$.strategy_names <- strategy_names[i]
   }
   
-  res <- Reduce(dplyr::bind_rows, list_res) %>% 
+  res <- 
+    dplyr::bind_rows(list_res) %>%
     tidyr::gather_(
       ".par_names", ".par_value",
       dsa$variables, na.rm = TRUE) %>% 

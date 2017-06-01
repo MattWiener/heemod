@@ -66,18 +66,20 @@ combine_models <- function(newmodels, weights, oldmodel) {
       list(collapsed_total_values)
     )
     
-    list_eval_models <- 
-      c(list_eval_models,
-        setNames(list(list(counts = collapsed_counts,
-                           values = collapsed_values)),
-                 strategy_names[i]))
+    list_eval_models <- c(
+      list_eval_models,
+      setNames(list(list(
+        counts = collapsed_counts,
+        values = collapsed_values)),
+        strategy_names[i]))
   }
   
   for (i in seq_along(strategy_names)){
     list_res[[i]]$.strategy_names <- strategy_names[i]
   }
   
-  res <- Reduce(dplyr::bind_rows, list_res) %>% 
+  res <- 
+    dplyr::bind_rows(list_res) %>%
     dplyr::mutate_(.dots = get_ce(oldmodel))
   
   root_strategy <- get_root_strategy(res)
@@ -99,10 +101,15 @@ combine_models <- function(newmodels, weights, oldmodel) {
       oldmodel = oldmodel,
       root_strategy = root_strategy,
       central_strategy = central_strategy,
-      noncomparable_strategy = noncomparable_strategy
+      noncomparable_strategy = noncomparable_strategy,
+      frontier = if (! is.null(root_strategy)) get_frontier(res)
     ),
     class = c("combined_model", class(res))
   )
+}
+
+get_frontier.combined_model <- function(x) {
+  x$frontier
 }
 
 get_model_results.combined_model <- function(x) {
