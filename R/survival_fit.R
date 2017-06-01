@@ -430,7 +430,8 @@ f_fit_survival_models <-
           this_fit <- try(
             flexsurv::flexsurvreg(this_formula, 
                                   data = this_data,
-                                  dist = conditions[i, "dist"])
+                                  dist = conditions[i, "dist"]),
+            silent = TRUE
         )
         }
       })
