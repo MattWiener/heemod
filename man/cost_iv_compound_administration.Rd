@@ -6,18 +6,20 @@
 \usage{
 cost_iv_compound_administration(data_table, compound, time_col = "iv_time_hr",
   first_cost_col = "cost_admin_first_hr",
-  addl_cost_col = "cost_admin_addl_hr", prorate_first = FALSE)
+  addl_cost_col = "cost_admin_addl_hr", prorate_first = FALSE, ...)
 }
 \arguments{
-\item{data_table}{a data frame; see details}
+\item{data_table}{a data frame; see details.}
 
-\item{compound}{the name of the compound}
+\item{compound}{the name of the compound.}
 
-\item{time_col, first_cost_col, addl_cost_col}{column names
-in data_table}
+\item{time_col, first_cost_col, addl_cost_col}{parameter names
+in data_table.}
 
 \item{prorate_first}{can we charge for less than 1 unit of time?
 See details in \code{\link[=cost_iv_administration]{cost_iv_administration()}}.}
+
+\item{additional}{filtering criteria that will be passed to \code{\link[=look_up]{look_up()}}.}
 }
 \value{
 the cost
@@ -27,7 +29,9 @@ Cost of administration for an intravenous treatment
 }
 \details{
 \code{data_table} must have columns \code{compound}, \code{param},
-and \code{value}.   The required values are found in \code{data_table}
+and \code{value}.   \code{time_col}, \code{first_cost_col} and \code{addl_cost_col}
+must be names in the \code{param} column.
+The required values are found in \code{data_table}
 using \code{\link[=look_up]{look_up()}}.   Then the values are summed using
 \code{\link[=cost_iv_administration]{cost_iv_administration()}}.
 }

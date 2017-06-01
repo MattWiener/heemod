@@ -199,7 +199,22 @@ test_that("finding least-cost combination of vials for a dose works",
                 desired_dose = 214.3,
                 used_dose = 220,
                 waste = 5.7,
-                cost = 5516.57
+                cost = 5516.57,
+                cost.no.waste = 5373.64
+              )
+            )
+
+            expect_equal(
+              find_least_cost_partition(c(214.3, 200),
+                                        units,
+                                        subset_col = "trt",
+                                        subset_val = "fake"),
+              data.frame(
+                desired_dose = c(214.3, 200),
+                used_dose = c(220, 200),
+                waste = c(5.7, 0.0),
+                cost = c(5516.57, 5015.05),
+                cost.no.waste = c(5373.64, 5015.05)
               )
             )
             

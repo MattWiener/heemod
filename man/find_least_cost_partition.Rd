@@ -18,7 +18,7 @@ find_least_cost_partition(desired_dose, available_units, subset_col = NULL,
 }
 \value{
 a data frame, with columns \code{desired_dose}, \code{used_dose},
-\code{waste}, and \code{cost}
+\code{waste}, \code{cost}, and \code{cost.no.waste}
 }
 \description{
 Find lowest-cost way to assemble units of different sizes to a certain total

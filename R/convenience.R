@@ -366,7 +366,7 @@ is_dosing_period <- function(N, init, pattern, first, then_every, cap = Inf){
 #' @param subset_val if subset_col is provided, the value to select on in that column.
 #'
 #' @return a data frame, with columns `desired_dose`, `used_dose`,
-#'  `waste`, and `cost`
+#'  `waste`, `cost`, and `cost.no.waste`
 #' @export
 #'
 #' @examples
@@ -429,7 +429,10 @@ find_least_cost_partition <-
     })
     ## combine outputs for all doses
     output_list <- do.call("rbind", output_list)
-    names(output_list) <- c("desired_dose", "used_dose", "waste", "cost")
+    names(output_list) <- c("desired_dose", "used_dose", 
+                            "waste", "cost") 
+    output_list$cost.no.waste <-
+      round(with(output_list, cost * desired_dose/used_dose), 2)
     output_list
   }
 
@@ -472,15 +475,18 @@ cost_iv_administration <-
 
 #' Cost of administration for an intravenous treatment
 #'
-#' @param data_table a data frame; see details
-#' @param compound the name of the compound
-#' @param time_col,first_cost_col,addl_cost_col column names
-#'   in data_table
+#' @param data_table a data frame; see details.
+#' @param compound the name of the compound.
+#' @param time_col,first_cost_col,addl_cost_col parameter names
+#'   in data_table.
 #' @param prorate_first can we charge for less than 1 unit of time?
 #'   See details in [cost_iv_administration()].  
+#' @param additional filtering criteria that will be passed to [look_up()].
 
 #' @details `data_table` must have columns `compound`, `param`,
-#'   and `value`.   The required values are found in `data_table`
+#'   and `value`.   `time_col`, `first_cost_col` and `addl_cost_col`
+#'   must be names in the `param` column.  
+#'   The required values are found in `data_table`
 #'   using [look_up()].   Then the values are summed using
 #'   [cost_iv_administration()].
 #'   
@@ -499,7 +505,7 @@ cost_iv_compound_administration <-
            time_col = "iv_time_hr",
            first_cost_col = "cost_admin_first_hr",
            addl_cost_col = "cost_admin_addl_hr",
-           prorate_first = FALSE)
+           prorate_first = FALSE, ...)
     {
     stopifnot(all(c("compound", "param", "value") %in%
                 names(data_table)))
@@ -509,21 +515,21 @@ cost_iv_compound_administration <-
     all_cols <- c(time_col, first_cost_col, addl_cost_col)
     cols_present <- all_cols %in% unique(data_table$param)
     if(!all(cols_present))
-      stop("columns", 
+      stop("parameters", 
            paste(all_cols[!cols_present], sep = ","),
            "are not in data_table"
       )
   iv_time <- 
     look_up(data_table, compound = compound, 
-            param = time_col, value = "value"
+            param = time_col, value = "value", ...
             )
   cost_first_unit <- 
     look_up(data_table, compound = compound, 
-            param = first_cost_col, value = "value"
+            param = first_cost_col, value = "value", ...
             )
   cost_addl_units <- 
     look_up(data_table, compound = compound, 
-            param = addl_cost_col, value = "value"
+            param = addl_cost_col, value = "value", ...
             )
   cost_iv_administration(iv_time, cost_first_unit, cost_addl_units)
   }
@@ -547,8 +553,10 @@ compute_vals_for_adv_ev_ <- function(ae_table){
     warning("some AE probabilities are missing in the table; ",
             "setting to 0")
   }
-  ## if there are missing values for some treatments, fill them in;
-  ##   if some are actually undefined, make them 0
+  ## if there are missing values for some treatments that
+  ##   are defined for other treatments, fill them in.
+  ##   if some are actually undefined (that is, not given
+  ##   for any treatment), make them 0
   other_names <- setdiff(names(ae_table), required_names)
   values <- ae_table[, c("ae", other_names)]
   values <- values[stats::complete.cases(values), ]
