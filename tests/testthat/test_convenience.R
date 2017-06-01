@@ -2,126 +2,178 @@ context("test convenience functions")
 
 test_that("functions for AE values work",
           {
-AEs <- data.frame(treatment = c("A", "A", "B", "B"),
-                  ae = c("ae1", "ae2", "ae1", "ae2"),
-                  prob = c(0.1, 0.1, 0.2, 0),
-                  cost = c(100, 200, 100, 200),
-                  disutility = c(0, .1, 0, 0.1),
-                  stringsAsFactors = FALSE)
-
-res1 <- compute_vals_for_adv_ev(AEs)
-correct <- tibble::tribble(
-  ~treatment, ~cost, ~disutility,
-  "A", 30, 1/100,
-  "B", 20, 0
-)
-expect_equivalent(as.data.frame(res1), 
-                  as.data.frame(correct)
-)
-expect_error(compute_vals_for_adv_ev(AEs[, c("treatment", "ae",
-                                             "prob")]),
-             "must have some column for a value")
-AEs2 <- AEs
-AEs2$prob <- c(0.1, 0.1, 0.2, NA)
-
-expect_warning(res2 <- compute_vals_for_adv_ev(AEs2),
-               "some AE probabilities are missing in the table"
-)
-expect_identical(res1, res2)
-
-AEs3 <- AEs
-AEs3$cost <- c(1, 2, 3, 4)
-
-expect_error(compute_vals_for_adv_ev(AEs3),
-             "multiple values defined")
-
-AEs4 <- AEs
-names(AEs4) <- c("treatment", "AE", "prob", "cost")
-expect_error(compute_vals_for_adv_ev(AEs4),
-             "adverse events table must have columns")
-
-expect_equal(ae_val(AEs, "A", "cost"), 30)
-expect_equal(ae_val(AEs, "B", "cost"), 20)
-expect_equal(ae_val(AEs, "A", "disutility"), 0.01)
-expect_equal(ae_val(AEs, "B", "disutility"), 0)
-expect_error(ae_val(AEs, "C", "cost"),
-             "no AE information returned")
-expect_error(ae_val(AEs, "A", "novalue"),
-             "no column")
-
-  }
-)
+            AEs <- data.frame(
+              treatment = c("A", "A", "B", "B"),
+              ae = c("ae1", "ae2", "ae1", "ae2"),
+              prob = c(0.1, 0.1, 0.2, 0),
+              cost = c(100, 200, 100, 200),
+              disutility = c(0, .1, 0, 0.1),
+              stringsAsFactors = FALSE
+            )
+            
+            res1 <- compute_vals_for_adv_ev(AEs)
+            correct <- tibble::tribble(~ treatment, ~ cost, ~ disutility,
+                                       "A", 30, 1 / 100,
+                                       "B", 20, 0)
+            expect_equivalent(as.data.frame(res1),
+                              as.data.frame(correct))
+            expect_error(compute_vals_for_adv_ev(AEs[, c("treatment", "ae",
+                                                         "prob")]),
+                         "must have some column for a value")
+            AEs2 <- AEs
+            AEs2$prob <- c(0.1, 0.1, 0.2, NA)
+            
+            expect_warning(
+              res2 <- compute_vals_for_adv_ev(AEs2),
+              "some AE probabilities are missing in the table"
+            )
+            expect_identical(res1, res2)
+            
+            AEs3 <- AEs
+            AEs3$cost <- c(1, 2, 3, 4)
+            
+            expect_error(compute_vals_for_adv_ev(AEs3),
+                         "multiple values defined")
+            
+            AEs4 <- AEs
+            names(AEs4) <- c("treatment", "AE", "prob", "cost")
+            expect_error(compute_vals_for_adv_ev(AEs4),
+                         "adverse events table must have columns")
+            
+            expect_equal(ae_val(AEs, "A", "cost"), 30)
+            expect_equal(ae_val(AEs, "B", "cost"), 20)
+            expect_equal(ae_val(AEs, "A", "disutility"), 0.01)
+            expect_equal(ae_val(AEs, "B", "disutility"), 0)
+            expect_error(ae_val(AEs, "C", "cost"),
+                         "no AE information returned")
+            expect_error(ae_val(AEs, "A", "novalue"),
+                         "no column")
+            
+          })
 
 test_that("is_dosing_period works",
-  {
-    expect_identical(is_dosing_period(N = 1:13, first = 4, 
-                                      then_every = 3, cap = 40),
-                     c(TRUE, TRUE, TRUE, TRUE, FALSE, FALSE,
-                       TRUE, FALSE, FALSE, TRUE, FALSE, FALSE, TRUE)
-    )
-    expect_identical(is_dosing_period(N = 37:46, first = 4, 
-                                      then_every = 3, cap = 40),
-                     c(TRUE, FALSE, FALSE, TRUE, FALSE, 
-                       FALSE, FALSE, FALSE, FALSE, FALSE)
-    )
-    expect_identical(is_dosing_period(N = 1:8, first = 4, 
-                                      pattern = 0, cap = 40),
-                     rep(c(TRUE, FALSE), each = 4)
-    )
-    expect_error(is_dosing_period(N = 1:8, first = 4, 
-                                  then_every = -1, cap = 40),
-                 "then_every cannot be negative"
-    )
-    ## demonstrating argument precedence rules
-    expect_identical(is_dosing_period(N = 1:10, init = c(1,0,1), 
-                                      first = 3, then_every = 5),
-                     c(TRUE, FALSE, TRUE, FALSE, FALSE, 
-                       FALSE, FALSE, TRUE, FALSE, FALSE)
-    )
-    expect_identical(is_dosing_period(N = 1:10, init = numeric(0), 
-                     pattern = c(1, 1, 0, 1, 0), then_every = 2),
-                     c(TRUE, TRUE, FALSE, TRUE, FALSE, 
-                       TRUE, TRUE, FALSE, TRUE, FALSE)
-    )
-    }
-)
+          {
+            expect_identical(
+              is_dosing_period(
+                N = 1:13,
+                first = 4,
+                then_every = 3,
+                cap = 40
+              ),
+              c(
+                TRUE,
+                TRUE,
+                TRUE,
+                TRUE,
+                FALSE,
+                FALSE,
+                TRUE,
+                FALSE,
+                FALSE,
+                TRUE,
+                FALSE,
+                FALSE,
+                TRUE
+              )
+            )
+            expect_identical(
+              is_dosing_period(
+                N = 37:46,
+                first = 4,
+                then_every = 3,
+                cap = 40
+              ),
+              c(
+                TRUE,
+                FALSE,
+                FALSE,
+                TRUE,
+                FALSE,
+                FALSE,
+                FALSE,
+                FALSE,
+                FALSE,
+                FALSE
+              )
+            )
+            expect_identical(is_dosing_period(
+              N = 1:8,
+              first = 4,
+              pattern = 0,
+              cap = 40
+            ),
+            rep(c(TRUE, FALSE), each = 4))
+            expect_error(
+              is_dosing_period(
+                N = 1:8,
+                first = 4,
+                then_every = -1,
+                cap = 40
+              ),
+              "then_every cannot be negative"
+            )
+            ## demonstrating argument precedence rules
+            expect_identical(
+              is_dosing_period(
+                N = 1:10,
+                init = c(1, 0, 1),
+                first = 3,
+                then_every = 5
+              ),
+              c(TRUE, FALSE, TRUE, FALSE, FALSE,
+                FALSE, FALSE, TRUE, FALSE, FALSE)
+            )
+            expect_identical(
+              is_dosing_period(
+                N = 1:10,
+                init = numeric(0),
+                pattern = c(1, 1, 0, 1, 0),
+                then_every = 2
+              ),
+              c(TRUE, TRUE, FALSE, TRUE, FALSE,
+                TRUE, TRUE, FALSE, TRUE, FALSE)
+            )
+          })
 
 test_that("utility by time before death",
-    {
-      ProgFree <- round(1000 * exp(-0.2 * 0:24))
-      Progressive <- round((1000 - ProgFree) * exp(-0.1 * 0:24))
-      Death <- 1000 - ProgFree - Progressive
-      state_names <- rep(c("ProgFree", "Progressive", "Death"), each = 25)
-      
-      counts <- data.frame(.strategy = rep("s1", 25),
-                           markov_cycle = 0:24,
-                           state_names = state_names,
-                           count = c(ProgFree, Progressive, Death)
-      )
-      class(counts) <- c("cycle_counts", class(counts))
-      
-      ## if utility is 1 in the cycle before death and 0 otherwise,
-      ##   then utility should be equal to the number of people
-      ##   about to die
-      aa1 <- data.frame(until_lag = 1, util = 1)
-      res1 <- utility_by_time_from_death(counts, util_before_death = aa1, 
-                                 util_long_before_death = 0)
-      expect_identical(res1[-length(res1)], 
-                       diff(dplyr::filter(counts, 
-                                          state_names == "Death")$count)
-                       )
-      ## gets delayed by 1 if utility is 1 only two cycles before death
-      aa2 <- data.frame(until_lag = 1:2, util = 0:1)
-      res2 <- utility_by_time_from_death(counts, util_before_death = aa2, 
+          {
+            ProgFree <- round(1000 * exp(-0.2 * 0:24))
+            Progressive <- round((1000 - ProgFree) * exp(-0.1 * 0:24))
+            Death <- 1000 - ProgFree - Progressive
+            state_names <-
+              rep(c("ProgFree", "Progressive", "Death"), each = 25)
+            
+            counts <- data.frame(
+              .strategy = rep("s1", 25),
+              markov_cycle = 0:24,
+              state_names = state_names,
+              count = c(ProgFree, Progressive, Death)
+            )
+            class(counts) <- c("cycle_counts", class(counts))
+            
+            ## if utility is 1 in the cycle before death and 0 otherwise,
+            ##   then utility should be equal to the number of people
+            ##   about to die
+            aa1 <- data.frame(until_lag = 1, util = 1)
+            res1 <-
+              utility_by_time_from_death(counts,
+                                         util_before_death = aa1,
                                          util_long_before_death = 0)
-      expect_identical(res2[-(length(res2) - 1 + 0:1 )],
-                       diff(dplyr::filter(counts, 
-                                          state_names == "Death")$count)[-1]
-      )
-      
-      
-    }
-    )
+            expect_identical(res1[-length(res1)],
+                             diff(dplyr::filter(counts,
+                                                state_names == "Death")$count))
+            ## gets delayed by 1 if utility is 1 only two cycles before death
+            aa2 <- data.frame(until_lag = 1:2, util = 0:1)
+            res2 <-
+              utility_by_time_from_death(counts,
+                                         util_before_death = aa2,
+                                         util_long_before_death = 0)
+            expect_identical(res2[-(length(res2) - 1 + 0:1)],
+                             diff(dplyr::filter(counts,
+                                                state_names == "Death")$count)[-1])
+            
+            
+          })
 
 test_that("finding least-cost combination of vials for a dose works",
           {
@@ -130,83 +182,162 @@ test_that("finding least-cost combination of vials for a dose works",
               volume = c(40, 100),
               cost = c(1003.01, 2507.54)
             )
-            expect_error(find_least_cost_partition(214.3,
-                                                   units,
-                                                   subset_col = "trt",
-                                                   subset_val = "fake"),
-                         "available_units must have columns 'size' and 'cost'")
-            names(units)[2] <- c("size")
-            expect_equal(find_least_cost_partition(214.3,
-                                                   units,
-                                                   subset_col = "trt",
-                                                   subset_val = "fake"),
-                             data.frame(desired_dose = 214.3,
-                                        used_dose = 220,
-                                        waste = 5.7,
-                                        cost = 5516.57))
-      
-            expect_error(find_least_cost_partition(214.3,
-                                                   units,
-                                                   subset_col = "trt"),
-                         "subset_col and subset_val should either both be NULL"
-                         )
-            expect_error(find_least_cost_partition(214.3,
-                                                   units,
-                                                   subset_val = "fake"),
-                         "subset_col and subset_val should either both be NULL"
-                         )
-            expect_error(find_least_cost_partition(214.3,
-                                                   units,
-                                                   subset_col = "not_a_col",
-                                                   subset_val = "fake"),
-                         "is not a column of available_units"
-                         )
-            expect_error(find_least_cost_partition(214.3,
-                                                   units,
-                                                   subset_col = "trt",
-                                                   subset_val = "not_there"),
-                         "does not contain the value"
-                         )
-            expect_error(find_least_cost_partition(214.3,
-                                                   units,
-                                                   subset_col = "trt",
-                                                   subset_val = c("fake1", "fake2")),
-                         "exactly one value"
+            expect_error(
+              find_least_cost_partition(214.3,
+                                        units,
+                                        subset_col = "trt",
+                                        subset_val = "fake"),
+              "available_units must have columns 'size' and 'cost'"
             )
-            expect_error(find_least_cost_partition(214.3,
-                                                   units,
-                                                   subset_col = c("trt1", "trt2"),
-                                                   subset_val = "fake"),
-                         "exactly one column"
+            names(units)[2] <- c("size")
+            expect_equal(
+              find_least_cost_partition(214.3,
+                                        units,
+                                        subset_col = "trt",
+                                        subset_val = "fake"),
+              data.frame(
+                desired_dose = 214.3,
+                used_dose = 220,
+                waste = 5.7,
+                cost = 5516.57
+              )
             )
             
-          }
-          )
+            expect_error(
+              find_least_cost_partition(214.3,
+                                        units,
+                                        subset_col = "trt"),
+              "subset_col and subset_val should either both be NULL"
+            )
+            expect_error(
+              find_least_cost_partition(214.3,
+                                        units,
+                                        subset_val = "fake"),
+              "subset_col and subset_val should either both be NULL"
+            )
+            expect_error(
+              find_least_cost_partition(214.3,
+                                        units,
+                                        subset_col = "not_a_col",
+                                        subset_val = "fake"),
+              "is not a column of available_units"
+            )
+            expect_error(
+              find_least_cost_partition(214.3,
+                                        units,
+                                        subset_col = "trt",
+                                        subset_val = "not_there"),
+              "does not contain the value"
+            )
+            expect_error(
+              find_least_cost_partition(
+                214.3,
+                units,
+                subset_col = "trt",
+                subset_val = c("fake1", "fake2")
+              ),
+              "exactly one value"
+            )
+            expect_error(
+              find_least_cost_partition(
+                214.3,
+                units,
+                subset_col = c("trt1", "trt2"),
+                subset_val = "fake"
+              ),
+              "exactly one column"
+            )
+            
+          })
 
 test_that("cost_at_right_time works",
           {
-            expect_error(cost_at_right_time(cost = 5, cycle = 1:10, age = 50 + 1:10),
-                         "must specify at least one of 'at_cost' and 'at_age'")
-            expect_error(cost_at_right_time(cost = 5, at_cycle = 5, at_age = 55),
-                         "must specify at least one of 'cost' and 'age'")
-            expect_error(cost_at_right_time(cost = 5, cycle = 1:10, age = 50 + 1:11,
-                                            at_cycle = 8),
-                         "must have the same length")
-            expect_error(cost_at_right_time(cost = 5, cycle = 1:10, at_age = 55),
-                         "at least one of both 'cycle' and 'at_cycle'")
-            expect_error(cost_at_right_time(cost = 5, age = 1:10, at_cycle = 5),
-                         "at least one of both 'cycle' and 'at_cycle'")
-            expect_equal(cost_at_right_time(cost = 5, cycle = 1:10, at_cycle = 20),
-                         rep(0, 10))
-            expect_equal(cost_at_right_time(cost = 5, age = 1:10, at_age = 20),
-                         rep(0, 10))
-            expect_equal(cost_at_right_time(cost = 5, cycle = 1:10, at_cycle = c(3, 6)),
-                         c(0, 0, 5, 0, 0, 5, 0, 0, 0, 0))
-            expect_equal(cost_at_right_time(cost = 5, age = 1:10, at_age = c(4, 7)),
-                         c(0, 0, 0, 5, 0, 0, 5, 0, 0, 0))
-            expect_equal(cost_at_right_time(cost = 5, cycle = 1:10, age = 50 + 1:10,
-                                            at_cycle = 3, at_age = 55),
-                         c(0, 0, 5, 0, 5, 0, 0, 0, 0, 0))
+            expect_error(
+              cost_at_right_time(
+                cost = 5,
+                cycle = 1:10,
+                age = 50 + 1:10
+              ),
+              "must specify at least one of 'at_cost' and 'at_age'"
+            )
+            expect_error(
+              cost_at_right_time(
+                cost = 5,
+                at_cycle = 5,
+                at_age = 55
+              ),
+              "must specify at least one of 'cost' and 'age'"
+            )
+            expect_error(
+              cost_at_right_time(
+                cost = 5,
+                cycle = 1:10,
+                age = 50 + 1:11,
+                at_cycle = 8
+              ),
+              "must have the same length"
+            )
+            expect_error(
+              cost_at_right_time(
+                cost = 5,
+                cycle = 1:10,
+                at_age = 55
+              ),
+              "at least one of both 'cycle' and 'at_cycle'"
+            )
+            expect_error(
+              cost_at_right_time(
+                cost = 5,
+                age = 1:10,
+                at_cycle = 5
+              ),
+              "at least one of both 'cycle' and 'at_cycle'"
+            )
+            expect_equal(cost_at_right_time(
+              cost = 5,
+              cycle = 1:10,
+              at_cycle = 20
+            ),
+            rep(0, 10))
+            expect_equal(cost_at_right_time(
+              cost = 5,
+              age = 1:10,
+              at_age = 20
+            ),
+            rep(0, 10))
+            expect_equal(cost_at_right_time(
+              cost = 5,
+              cycle = 1:10,
+              at_cycle = c(3, 6)
+            ),
+            c(0, 0, 5, 0, 0, 5, 0, 0, 0, 0))
+            expect_equal(cost_at_right_time(
+              cost = 5,
+              age = 1:10,
+              at_age = c(4, 7)
+            ),
+            c(0, 0, 0, 5, 0, 0, 5, 0, 0, 0))
+            expect_equal(
+              cost_at_right_time(
+                cost = 5,
+                cycle = 1:10,
+                age = 50 + 1:10,
+                at_cycle = 3,
+                at_age = 55
+              ),
+              c(0, 0, 5, 0, 5, 0, 0, 0, 0, 0)
+            )
             
-          }
-          )
+          })
+
+test_that("intravenous dosing cost function works",
+          {
+            expect_equal(cost_iv_administration(0.5, 100, 20, prorate_first = TRUE),
+                         50)
+            expect_equal(cost_iv_administration(1.5, 100, 20, prorate_first = TRUE),
+                         110)
+            expect_equal(cost_iv_administration(0.5, 100, 20, prorate_first = FALSE),
+                         100)
+            expect_equal(cost_iv_administration(1.5, 100, 20, prorate_first = FALSE),
+                         110)
+          })

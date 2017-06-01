@@ -4,10 +4,11 @@
 \alias{plot_fit_data}
 \title{Plot fit data}
 \usage{
-plot_fit_data(data_to_plot, plot_type = c("survival", "cumulative hazard"),
-  plot_dists = NULL, scale_time = 1, time_label = "time",
-  max_scaled_time = Inf, title = NULL, x_axis_gap, legend_loc = "right",
-  logy = NULL, km_width = 1.25)
+plot_fit_data(data_to_plot, plot_type = c("survival", "cumulative hazard",
+  "log cumulative hazard"), plot_groups = NULL, groups = "dist",
+  scale_time = 1, time_label = "time", max_scaled_time = Inf,
+  title = NULL, x_axis_gap, legend_loc = "right", logy = NULL,
+  km_width = 1.25)
 }
 \arguments{
 \item{data_to_plot}{a data frame from
@@ -15,9 +16,11 @@ plot_fit_data(data_to_plot, plot_type = c("survival", "cumulative hazard"),
 
 \item{plot_type}{\code{survival} or \code{cumulative hazard}}
 
-\item{plot_dists}{which distributions should be included
+\item{plot_groups}{which groups should be included
 in the plot.   If NULL, all distributions in the data
 are included.}
+
+\item{groups}{column name to use for grouping.}
 
 \item{scale_time}{times are multiplied by this.  So if your
 fit was done on a time scale of days, and you want to plot

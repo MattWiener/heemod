@@ -439,18 +439,32 @@ find_least_cost_partition <-
 #' @param iv_time The infusion time, in units compatible with the costs
 #' @param cost_first_unit cost for the first time unit
 #' @param cost_addl_units cost for the second time unit
-#'
+#' @param prorate_first can we charge for less than 1 unit of time?
+#'   See details.  
 #' @return the cost
 #' @details Simple formula:  cost for the first time unit (prorated if 
-#'   total time is less than one unit) plus the prorated cost for
-#'   additional units.
+#'   total time is less than one unit and `prorate_first == TRUE`) 
+#'   plus the prorated cost for additional units.
+#'   
+#'   If `prorate_first == FALSE`, then the smallest time that
+#'   can be charged is one time unit.   For example, if time = 0.5
+#'   and `prorate_first == TRUE`, the function will charge for one
+#'   half of a time unit.   If time = 0.5 and `prorate_first == FALSE`,
+#'   the function will charge for a full time unit.
 #' @export
 #' @examples
-#' cost_iv_administration(0.5, 100, 20) # = 50
-#' cost_iv_administration(1.5, 100, 20) # = 110
+#' cost_iv_administration(0.5, 100, 20, prorate_first = TRUE) # = 50
+#' cost_iv_administration(1.5, 100, 20, prorate_first = TRUE) # = 110
+#' cost_iv_administration(0.5, 100, 20, prorate_first = FALSE) # = 100
+#' cost_iv_administration(1.5, 100, 20, prorate_first = FALSE) # = 110
 cost_iv_administration <- 
-  function(iv_time, cost_first_unit, cost_addl_units){
-    pmin(iv_time, 1) * cost_first_unit + 
+  function(iv_time, cost_first_unit, cost_addl_units, prorate_first = FALSE){
+    if(prorate_first)
+      first_time <- pmin(iv_time, 1)
+    else
+      first_time <- 1
+    
+    first_time * cost_first_unit + 
       pmax(iv_time - 1, 0) * cost_addl_units
     
   }
@@ -462,6 +476,9 @@ cost_iv_administration <-
 #' @param compound the name of the compound
 #' @param time_col,first_cost_col,addl_cost_col column names
 #'   in data_table
+#' @param prorate_first can we charge for less than 1 unit of time?
+#'   See details in [cost_iv_administration()].  
+
 #' @details `data_table` must have columns `compound`, `param`,
 #'   and `value`.   The required values are found in `data_table`
 #'   using [look_up()].   Then the values are summed using
@@ -481,7 +498,8 @@ cost_iv_compound_administration <-
   function(data_table, compound,
            time_col = "iv_time_hr",
            first_cost_col = "cost_admin_first_hr",
-           addl_cost_col = "cost_admin_addl_hr")
+           addl_cost_col = "cost_admin_addl_hr",
+           prorate_first = FALSE)
     {
     stopifnot(all(c("compound", "param", "value") %in%
                 names(data_table)))

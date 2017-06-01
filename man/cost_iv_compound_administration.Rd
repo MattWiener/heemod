@@ -6,7 +6,7 @@
 \usage{
 cost_iv_compound_administration(data_table, compound, time_col = "iv_time_hr",
   first_cost_col = "cost_admin_first_hr",
-  addl_cost_col = "cost_admin_addl_hr")
+  addl_cost_col = "cost_admin_addl_hr", prorate_first = FALSE)
 }
 \arguments{
 \item{data_table}{a data frame; see details}
@@ -15,6 +15,9 @@ cost_iv_compound_administration(data_table, compound, time_col = "iv_time_hr",
 
 \item{time_col, first_cost_col, addl_cost_col}{column names
 in data_table}
+
+\item{prorate_first}{can we charge for less than 1 unit of time?
+See details in \code{\link[=cost_iv_administration]{cost_iv_administration()}}.}
 }
 \value{
 the cost
