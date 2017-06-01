@@ -8,7 +8,7 @@ plot_fit_data(data_to_plot, plot_type = c("survival", "cumulative hazard",
   "log cumulative hazard"), plot_groups = NULL, groups = "dist",
   scale_time = 1, time_label = "time", max_scaled_time = Inf,
   title = NULL, x_axis_gap, legend_loc = "right", logy = NULL,
-  km_width = 1.25)
+  km_width = 1.25, label_size = 1.25)
 }
 \arguments{
 \item{data_to_plot}{a data frame from
@@ -41,6 +41,8 @@ it is TRUE for survival curves and FALSE for cumulative hazard.}
 
 \item{km_width}{width for the Kaplan-Meier curve line;
 approximately 0.5 seems to be the standard width for lines}
+
+\item{label_size}{relative multiplier for label size.}
 }
 \value{
 a \code{ggplot2} plot object

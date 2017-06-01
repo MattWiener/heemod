@@ -302,6 +302,7 @@ summary_helper <- function(fit, type, ...){
 #'   it is TRUE for survival curves and FALSE for cumulative hazard.
 #' @param km_width width for the Kaplan-Meier curve line;
 #'   approximately 0.5 seems to be the standard width for lines
+#' @param label_size relative multiplier for label size.
 #' @return a `ggplot2` plot object
 #' @export
 #'
@@ -318,7 +319,8 @@ plot_fit_data <- function(data_to_plot,
                           x_axis_gap,
                           legend_loc = "right",
                           logy = NULL, 
-                          km_width = 1.25){
+                          km_width = 1.25,
+                          label_size = 1.25){
   if(length(unique(data_to_plot$type)) > 1)
     warning("more than one type in plotting data - could cause problems")
   if(length(unique(data_to_plot$treatment)) > 1)
@@ -393,12 +395,12 @@ plot_fit_data <- function(data_to_plot,
       ggplot2::geom_line(data = data_to_plot) +
       ggplot2::scale_color_manual(labels = unique_labels,
                                   values = use_colors) +
-      ggplot2::guides(color = guide_legend(override.aes = list(size = 1.5)))
+      ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 1.5)))
   if(groups == "dist")
     res <- res + 
     ggplot2::geom_step(ggplot2::aes(x = time, y = est), 
                        data = dplyr::filter_(data_to_plot, 
-                                             ~ groups == "km"), 
+                                             ~ dist == "km"), 
                        col = "black", 
                        lwd = km_width)
   if(logy) res <- res + ggplot2::scale_y_log10()
@@ -409,6 +411,8 @@ plot_fit_data <- function(data_to_plot,
     res <- res + ggplot2::scale_x_continuous(breaks = breaks)
   }
   res <- res + ggplot2::labs(y = plot_type, x = time_label, title = title)
+  res <- 
+    res + ggplot2::theme(axis.title = element_text(size = ggplot2::rel(label_size)))
   res <- res + ggplot2::theme(legend.position = legend_loc)
   res
 }
@@ -559,6 +563,7 @@ plot_cloglog_fit_tibble <-
       plot_fit_data(km_cloglog_plot_data, 
                     plot_type = "log cumulative hazard",
                     groups = "treatment",
+                    time_label = "time (log scale)",
                     ...)
     res_cloglog <- 
       res_cloglog + ggplot2::geom_hline(yintercept = 1,
