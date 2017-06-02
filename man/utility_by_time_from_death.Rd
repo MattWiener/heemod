@@ -48,8 +48,8 @@ a vector of utilities, of length \code{nrow(counts)}.
 Calculate utilities based on time before death
 }
 \examples{
-ProgFree <- round(1000 * exp(-0.2 * 0:24))
-Progressive <- round((1000 - ProgFree) * exp(-0.1 * 0:24))
+ProgFree <- round(1000 * exp(-0.4 * 0:24))
+Progressive <- round((1000 - ProgFree) * exp(-0.4 * 0:24))
 Death <- 1000 - ProgFree - Progressive
 state_names <- rep(c("ProgFree", "Progressive", "Death"), each = 25)
 

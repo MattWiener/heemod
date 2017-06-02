@@ -75,8 +75,8 @@ cost_at_right_time <-
 #' @export
 #'
 #' @examples
-#' ProgFree <- round(1000 * exp(-0.2 * 0:24))
-#' Progressive <- round((1000 - ProgFree) * exp(-0.1 * 0:24))
+#' ProgFree <- round(1000 * exp(-0.4 * 0:24))
+#' Progressive <- round((1000 - ProgFree) * exp(-0.4 * 0:24))
 #' Death <- 1000 - ProgFree - Progressive
 #' state_names <- rep(c("ProgFree", "Progressive", "Death"), each = 25)
 #' 
@@ -108,12 +108,12 @@ utility_by_time_from_death.cycle_counts <-
       stop("death_state must be the name of one of the states")
     if(!all(c("until_lag", "util") %in% names(util_before_death)))
       stop("util_before_death must have columns until_lag and util")
-    distinct_num_subjects <- 
+    subjects_by_cycle <- 
       counts %>% 
-        dplyr::group_by_( ~ markov_cycle) %>%
-          dplyr::summarize_(., num_subjects = ~sum(count)) %>%
-          dplyr::summarize_(., unique_subjects = ~dplyr::n_distinct(round(num_subjects, 6)))
-    stopifnot(distinct_num_subjects ==  1)
+      dplyr::group_by_( ~ markov_cycle) %>%
+      dplyr::summarize_(., num_subjects = ~sum(count))
+    num_subjects <- unique(round(subjects_by_cycle$num_subjects, 6))
+    stopifnot(length(num_subjects) ==  1)
     if(any(util_before_death[, "until_lag"] <= 0))
       stop("problem with util_before_death: can't specify values for Markov cycles <= 0")
     if(max(util_before_death[, "until_lag"]) < 1)
@@ -121,17 +121,29 @@ utility_by_time_from_death.cycle_counts <-
     
     death_counts <- 
       dplyr::filter_(counts, ~state_names == death_state)$count
+    if(max(death_counts) != num_subjects){
+      stop("not all subjects reach the death state: (", 
+           round(max(death_counts), 3),
+           " out of ",
+           num_subjects,
+           "); \n",
+           "to compute utility by time before death, ",  
+           "you need to know time of death for each subject.")
+    }
     alive_counts_by_cycle <- 
       counts %>% 
-        dplyr::filter_( ~ state_names != death_state) %>%
-          dplyr::group_by_(~ markov_cycle) %>%
-            dplyr::summarize_(alive_counts = ~ sum(count))
+      dplyr::filter_( ~ state_names != death_state) %>%
+      dplyr::group_by_(~ markov_cycle) %>%
+      dplyr::summarize_(alive_counts = ~ sum(count))
     
     alive_counts <- alive_counts_by_cycle$alive_counts
     new_deaths <- c(0, diff(death_counts))
     discounted_new_deaths <- 
       discount(new_deaths, discount_rate, first = FALSE) 
     
+    ## feels like there should be a better way to do this by having
+    ## util_long_before_death instead 0 at the end of the modified
+    ## util_df below.   but then miss the long before death utils.
     util_df <- 
       data.frame(cycles = c(0, util_before_death[, "until_lag"] + 1e-5),
                  util = c(util_before_death[, "util"], 0))
@@ -145,8 +157,13 @@ utility_by_time_from_death.cycle_counts <-
     )
     ## filter vector to just count up the people who are
     ##   the specified times before death
+    use_length <- 
+      min(max(util_before_death[, "until_lag"] + 1),
+          length(util_vec))
+    
     near_death_vec <- rep(1, max(util_before_death[, "until_lag"]) + 1)
-    util_vec <- util_vec[1:length(near_death_vec)]
+    util_vec <- util_vec[pmin(1:length(near_death_vec),
+                              length(util_vec))]
     ## adjust for lag
     util_vec[1] <- near_death_vec[1] <- 0        
     
@@ -173,7 +190,7 @@ utility_by_time_from_death.cycle_counts <-
 #' @export
 utility_by_time_from_death.eval_strategy <- 
   function(x, ...){
-    utility_by_time_from_death.cycle_counts(get_counts(x), ...)
+    utility_by_time_from_death(get_counts(x), ...)
   }
 
 #' @rdname utility_by_time_from_death
@@ -181,9 +198,16 @@ utility_by_time_from_death.eval_strategy <-
 utility_by_time_from_death.run_model <- 
   function(x, m, ...){
     temp <- dplyr::filter_(get_counts(x), ~ .strategy_names == m)
-    utility_by_time_from_death.cycle_counts(temp, ...)
+    utility_by_time_from_death(temp, ...)
   }
 
+utility_by_time_from_death.data.frame <-
+  function(x, ...){
+    x$markov_cycle <- 1:nrow(x)
+    tidied <- tidyr::gather(x, key = "state_names", 
+                            value = "count", -markov_cycle)
+    utility_by_time_from_death.cycle_counts(tidied, ...)
+  }
 
 #' Model piecewise linear decline in vaccine efficacy
 #' or other variables
@@ -481,7 +505,8 @@ cost_iv_administration <-
 #'   in data_table.
 #' @param prorate_first can we charge for less than 1 unit of time?
 #'   See details in [cost_iv_administration()].  
-#' @param additional filtering criteria that will be passed to [look_up()].
+#' @param ... additional arguments, filtering criteria 
+#'   that will be passed to [look_up()].
 
 #' @details `data_table` must have columns `compound`, `param`,
 #'   and `value`.   `time_col`, `first_cost_col` and `addl_cost_col`

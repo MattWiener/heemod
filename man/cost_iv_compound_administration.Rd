@@ -19,7 +19,8 @@ in data_table.}
 \item{prorate_first}{can we charge for less than 1 unit of time?
 See details in \code{\link[=cost_iv_administration]{cost_iv_administration()}}.}
 
-\item{additional}{filtering criteria that will be passed to \code{\link[=look_up]{look_up()}}.}
+\item{...}{additional arguments, filtering criteria
+that will be passed to \code{\link[=look_up]{look_up()}}.}
 }
 \value{
 the cost

@@ -137,8 +137,8 @@ test_that("is_dosing_period works",
 
 test_that("utility by time before death",
           {
-            ProgFree <- round(1000 * exp(-0.2 * 0:24))
-            Progressive <- round((1000 - ProgFree) * exp(-0.1 * 0:24))
+            ProgFree <- round(1000 * exp(-0.4 * 0:24))
+            Progressive <- round((1000 - ProgFree) * exp(-0.4 * 0:24))
             Death <- 1000 - ProgFree - Progressive
             state_names <-
               rep(c("ProgFree", "Progressive", "Death"), each = 25)
@@ -172,7 +172,49 @@ test_that("utility by time before death",
                              diff(dplyr::filter(counts,
                                                 state_names == "Death")$count)[-1])
             
+            ## catch the error if not all the subjects die
+            restricted_counts <- dplyr::filter_(counts, ~markov_cycle <= 15)
+            class(restricted_counts) <- c("cycle_counts", "data.frame")
+            expect_error(
+              utility_by_time_from_death(restricted_counts,
+                                         util_before_death = aa2,
+                                         util_long_before_death = 0),
+              "not all subjects reach the death state"
+            )
             
+            ## we should be able to replace util_long_before_death by 
+            ##  having a long lag time with the same utility.
+            ## check once defining times longer than number of cycles
+            
+            util_df_1 <- data.frame(until_lag = c(4, 13, 26, 39, 52), 
+                                    util = c(.2, .3, .4, .5, .6))
+            util_df_2 <- rbind(util_df_1,
+                               c(until_lag = 1000, util = 0.7))
+            res_1 <- 
+              utility_by_time_from_death(counts,
+                                         util_before_death = util_df_1,
+                                         util_long_before_death = 0.7)
+            res_2 <- 
+              utility_by_time_from_death(counts,
+                                         util_before_death = util_df_2,
+                                         util_long_before_death = 0)
+            expect_equal(res_1, res_2)
+            
+            util_df_1 <- data.frame(until_lag = c(2, 4, 6, 8, 10), 
+                                    util = c(.2, .3, .4, .5, .6))
+            util_df_2 <- rbind(util_df_1,
+                               c(until_lag = 1000, util = 0.7))
+            res_1 <- 
+              utility_by_time_from_death(counts,
+                                         util_before_death = util_df_1,
+                                         util_long_before_death = 0.7)
+            res_2 <- 
+              utility_by_time_from_death(counts,
+                                         util_before_death = util_df_2,
+                                         util_long_before_death = 0)
+            expect_equal(res_1, res_2)
+            
+
           })
 
 test_that("finding least-cost combination of vials for a dose works",
