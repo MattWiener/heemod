@@ -262,12 +262,14 @@ prepare_plot_data_from_fit_tibble <-
 summary_helper <- function(fit, type, ...){
   stopifnot(inherits(fit, c("flexsurvreg", "survfit", "surv_shift",
                             "surv_projection")))
-    res1 <- summary(fit, type = type, ...)
+    res1 <- summary(fit, type = type, 
+                    summary_type = "standard", ...)
     all_times <- sort(unique(c(res1[["time"]],
                                seq(from = 1, 
                                    to = max(res1[["time"]]),
                                    by = 1))))
-    res1 <- summary(fit, type = type, t = all_times, ...)
+    res1 <- summary(fit, type = type, t = all_times, 
+                    summary_type = "standard", ...)
 
   if(inherits(res1, "summary.survfit")){
     res1 <- data.frame(res1[c("time", "surv", "lower", "upper")])
