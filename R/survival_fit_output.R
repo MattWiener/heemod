@@ -531,7 +531,8 @@ plot_fit_tibble <-
 #' Assemble data from a fit tibble and plot a log cumulative hazard plot
 #'
 #' @param fit_tibble the output of [survival_fits_from_tabular()].
-#' @param treatment the treatments for which we want to plot.
+#' @param treatments the treatments to include; if left `NULL`,
+#'   all treatments will be included.
 #' @param set_name subset name
 #' @param type PFS or OS
 #' @param ... additional parameters to pass to [plot_fit_data()]
@@ -541,7 +542,7 @@ plot_fit_tibble <-
 #'
 
 plot_cloglog_fit_tibble <- 
-  function(fit_tibble, treatments, set_name, type, ...){
+  function(fit_tibble, treatments = NULL, set_name, type, ...){
     check_plot_tibble_input(fit_tibble, treatments, set_name, type)
     ## pull out just Kaplan-Meier fits,
     ##   with only the type we want (PFS or OS),
@@ -550,9 +551,12 @@ plot_cloglog_fit_tibble <-
       dplyr::filter_(fit_tibble,
                      ~ dist == "km",
                      lazyeval::interp(~type == var, var = type),
-                     lazyeval::interp(~treatment %in% var, var = treatments),
                      lazyeval::interp(~set_name %in% var, var = set_name)
       )
+    
+    if(!is.null(treatments))
+      partial1 <- partial1 %>% 
+                    dplyr::filter_( lazyeval::interp(~treatment %in% var, var = treatments))
     
      km_cloglog_plot_data <- 
        prepare_plot_data_from_fit_tibble(partial1)  %>%

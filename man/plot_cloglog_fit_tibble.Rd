@@ -4,18 +4,19 @@
 \alias{plot_cloglog_fit_tibble}
 \title{Assemble data from a fit tibble and plot a log cumulative hazard plot}
 \usage{
-plot_cloglog_fit_tibble(fit_tibble, treatments, set_name, type, ...)
+plot_cloglog_fit_tibble(fit_tibble, treatments = NULL, set_name, type, ...)
 }
 \arguments{
 \item{fit_tibble}{the output of \code{\link[=survival_fits_from_tabular]{survival_fits_from_tabular()}}.}
+
+\item{treatments}{the treatments to include; if left \code{NULL},
+all treatments will be included.}
 
 \item{set_name}{subset name}
 
 \item{type}{PFS or OS}
 
 \item{...}{additional parameters to pass to \code{\link[=plot_fit_data]{plot_fit_data()}}}
-
-\item{treatment}{the treatments for which we want to plot.}
 }
 \value{
 a \code{ggplot} plot
