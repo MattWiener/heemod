@@ -151,7 +151,19 @@ test_that("fitting works (including with subsets)",
             ok_surv_info <- 
               heemod:::read_file(system.file("tabular/surv/survival_info.csv", 
                                     package = "heemod"))
+            not_ok_surv_info <- 
+              ok_surv_info
+            not_ok_surv_info$censor_col[1] <- "status2"
             
+            expect_error(
+              heemod:::survival_from_data(location = location,
+                                          survival_specs = not_ok_surv_info,
+                                          dists = c("exp", "weibull"),
+                                          save_fits = FALSE,
+                                          use_envir = new.env()),
+              "censoring status column 'status2' does not exist in data file"
+              
+            )
               these_fits <- 
               heemod:::survival_from_data(location = location,
                                  survival_specs = ok_surv_info,
@@ -236,7 +248,7 @@ test_that("fitting works (including with subsets)",
                                           dists = c("exp", "weibull"),
                                           save_fits = FALSE,
                                           use_envir = new.env()),
-              "non-matching values in status; all values should be either event or censor"
+              "non-matching values in status; all values should be either 'event' or 'censor'"
             )
             
             ## make sure we run correctly if we specify correct event codes

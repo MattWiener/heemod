@@ -162,16 +162,23 @@ survival_from_data <-
                   dplyr::filter_(filter_str)
                 ## set up the event values: 1 for event, 0 for censored
                 this_censor_col <- survival_specs[this_row, "censor_col"]
+                if(!this_censor_col %in% names(this_data))
+                  stop("censoring status column '",
+                       this_censor_col,
+                       "' does not exist in data file '",
+                       data_files[this_row],
+                       "'")
                 this_data[, this_censor_col] <-
                   match(this_data[, this_censor_col],
                         c(survival_specs[this_row, "censor_code"],
                           survival_specs[this_row, "event_code"])) - 1
                 if(any(is.na(this_data[, this_censor_col])))
                   stop("non-matching values in ", this_censor_col,
-                       "; all values should be either ",
+                       "; all values should be either '",
                        survival_specs[this_row, "event_code"],
-                       " or ",
-                       survival_specs[this_row, "censor_code"])
+                       "' or '",
+                       survival_specs[this_row, "censor_code"],
+                       "'")
                 ## get set definitions, if there are any
                 ## (if not, will return a data frame with no rows)
                 set_definitions <- 
