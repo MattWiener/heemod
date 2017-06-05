@@ -516,11 +516,18 @@ plot_fit_tibble <-
                                 scale_time = scale_time, 
                                 ...)
     
+    use_title <- paste(type, " for subset '", 
+          set_name, "' of treatment '", 
+          treatment, "'", sep = "")
+    
+    res_surv <- res_surv + ggplot2::ggtitle(use_title)
+    res_cumhaz <- res_cumhaz + ggplot2::ggtitle(use_title)
+    
     if(!is.na(time_subtract) && time_subtract != 0){
       res_surv <- 
         res_surv + 
         ggplot2::geom_vline(xintercept = time_subtract * scale_time, 
-                            lty = 2)
+                            lty = 2) 
       res_cumhaz <- 
         res_cumhaz + 
         ggplot2::geom_vline(xintercept = time_subtract * scale_time, 
@@ -575,7 +582,8 @@ plot_cloglog_fit_tibble <-
       res_cloglog + ggplot2::geom_hline(yintercept = 1,
                                         lty = "dashed") + 
       geom_line(size = 1.25)
-    
+    use_title <- paste(type, " for subset '", set_name, "'", sep = "")
+    res_cloglog <- res_cloglog + ggplot2::ggtitle(use_title)
     res_cloglog
       
   }
