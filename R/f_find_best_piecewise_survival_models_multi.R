@@ -107,6 +107,7 @@ f_find_best_piecewise_survival_models <-
 	unique_groups <- as.character(unique(survdata[,treatment_col_name]))
 	groups_list <- c(list(unique_groups))
 	names(groups_list) <- c("all")
+	library("flexsurv")
 #	if(fit_indiv_groups)
 #	{
 #		groups_list <- c(as.list(unique_groups), list(unique_groups))
@@ -476,7 +477,7 @@ get_best_fit_across_breakpoints <-
     bp_fit <- list()
     for(bp_index in 1:nrow(these_bp)){
       use_bp <- these_bp[bp_index, ]
-      print(use_bp)
+      if (options()$heemod.verbose) message(use_bp)
       add_args <- get_survival_arg_list(these_bp = use_bp,
                                         dists = use_dists, 
                                         fixed_bp = fixed_bp,

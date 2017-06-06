@@ -22,7 +22,7 @@ potential breaks (but may not end up being included).}
 \item{min_bp_dist}{The minimum distance between adjacent breakpoints.}
 
 \item{num_breaks}{How many breakpoints should there be in the
-piecewise exponential?}
+piecewise survival fit?}
 
 \item{fixed_bp}{Should breakpoints be considered fixed (the default) or
 can they be optimized over?}

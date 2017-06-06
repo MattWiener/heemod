@@ -109,11 +109,11 @@ data.3piece <-
   data.frame(time = r_piecewise_exponential_builder(my_pe)(1000),
              status = 1, group = 1)           
 \dontrun{
-res <- f_find_best_with_fixed_num_num_pieces(num_breaks = 2, 
+res <- f_find_best_with_fixed_num_pieces(num_breaks = 2, 
          survdata = data.3piece, time_col_name = "time", 
          censor_col_name = "status", treatment_col_name = "group", 
          fit_indiv_groups = FALSE, num_cand = 10, 
-         fixed_bp = TRUE, min_bp_dist = 30, eval_metric="BIC"))
+         fixed_bp = TRUE, min_bp_dist = 30, eval_metric="BIC")
 }
 
 }

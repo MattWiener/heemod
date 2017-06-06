@@ -27,7 +27,9 @@ A list of lists, with each sublist pertaining to a particular group.
 Each sublist will have two elements:  \code{metric}, a data frame giving
 the evaluation metric (either AIC, BIC, or m2LL - depending on the selection set for
 the eval_metric parameter) for the best fit with each number of pieces, and \code{fits},
-a list with the best fit for each number of pieces.
+a list with the best fit for each number of pieces.   Finally, each \code{fit} object
+has two elements:  \code{model_def} and \code{fit}.   \code{model_def} is a human-readable
+description of the model, and \code{fit} is the corresponding \code{flexsurvreg} object.
 }
 \description{
 Find best piecewise models for different numbers of pieces.
@@ -72,7 +74,7 @@ res <- f_find_best_piecewise_survival_models(num_pieces = c(1, 2, 3),
          survdata = data.3piece, time_col_name = "time", 
          censor_col_name = "status", treatment_col_name = "group", 
          fit_indiv_groups = FALSE, num_cand = 10, fixed_bp = TRUE, 
-         min_bp_dist = 30, include_breaks = 200, eval_metric="BIC", build_fits = TRUE)
+         min_bp_dist = 30, include_breaks = 200, eval_metric="BIC")
 }
 
 my_pe <- data.frame(start = c(0, 100, 200), hazard = c(0.003, 0.010, 0.006))
