@@ -4,7 +4,7 @@ H_piecewise_multi <- function(t, pieces_def, dists, log = FALSE){
   ##  hazard functions for those distributions
   ## (see r_piecewise_exponential_builder)
   if(!is.data.frame(pieces_def)){
-    pieces_def <- convert_vector_to_struct_2(pieces_def, dists)
+    pieces_def <- convert_vector_to_struct(pieces_def, dists)
     }
   pieces_def$start2 <- pieces_def$start
   start_times <- look_up(pieces_def, start = t, #pieces_def$start,
@@ -59,7 +59,7 @@ h_piecewise_multi <- function(t, pieces_def, dists, log = FALSE){
   ## pe.def must be a data frame with columns start and hazard
   ## (see r_piecewise_exponential_builder)
      if(!is.data.frame(pieces_def)){
-       pieces_def <- convert_vector_to_struct_2(pieces_def, dists)
+       pieces_def <- convert_vector_to_struct(pieces_def, dists)
        }
   pieces_def$start2 <- pieces_def$start
   start_times <- look_up(pieces_def, start = t,
@@ -89,19 +89,7 @@ h_piecewise_multi <- function(t, pieces_def, dists, log = FALSE){
   return(res)
 }
 
-
-## this could be used by encoding distributions as numbers
-convert_vector_to_struct <- 
-  function(pieces_def_vec){
-  num_rows <- as.numeric(pieces_def_vec[1])
-  dists <- as.character(pieces_def_vec[1 + 1:num_rows])
-  break_points <- as.numeric(pieces_def_vec[1 + num_rows + 1:num_rows])
-  dist_args <- as.numeric(pieces_def_vec[-c(1:(2 * num_rows + 1))])
-  build_pieces_def_structure(dists, break_points, dist_args)
-  }
-
-## this is if we manage to pass in dists
-convert_vector_to_struct_2 <-
+convert_vector_to_struct <-
   function(pieces_def_vec, dists){
     num_rows <- length(dists)
     break_points <- as.numeric(pieces_def_vec[1:num_rows])
@@ -185,7 +173,6 @@ get_custom_fss_piecewise_multi <-
       )
     
     if (fixed_bp) {
-      ##transform_nums <- c(1 + 2 * length(dists), sum(num_hfn_args))
       transform_nums <- c(length(dists), sum(num_hfn_args))
           }
     else{
@@ -222,7 +209,6 @@ get_multi_dist_inits <- function(these_bp, dists, t){
              init_fn(t)
          }
     )
-##  c(length(dists), dists, these_bp, unlist(init_vals))
   c(these_bp, unlist(init_vals))
   }
   

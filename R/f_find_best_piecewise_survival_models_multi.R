@@ -33,7 +33,9 @@
 #' 	 Each sublist will have two elements:  \code{metric}, a data frame giving
 #'   the evaluation metric (either AIC, BIC, or m2LL - depending on the selection set for 
 #' 	 the eval_metric parameter) for the best fit with each number of pieces, and \code{fits},
-#'    a list with the best fit for each number of pieces.
+#'    a list with the best fit for each number of pieces.   Finally, each `fit` object
+#'    has two elements:  `model_def` and `fit`.   `model_def` is a human-readable
+#'    description of the model, and `fit` is the corresponding `flexsurvreg` object.
 #' @export
 #'
 #' @examples
@@ -374,7 +376,7 @@ f_find_best_with_fixed_num_pieces <-
 #' @param include_breaks breaks that must be included in any solution.
 #' @param min_bp_dist The minimum distance between adjacent breakpoints.
 #' @param num_breaks How many breakpoints should there be in the
-#'   piecewise exponential?
+#'   piecewise survival fit?
 #' @param fixed_bp Should breakpoints be considered fixed (the default) or
 #'   can they be optimized over?
 #' @return a matrix with one row for each set of breakpoints.
@@ -471,15 +473,6 @@ get_best_fit_across_breakpoints <-
 
     stopifnot(eval_metric %in% c("AIC","BIC","m2LL"))
     
-    fit_quality_bp <-
-      data.frame(
-        set = rep(as.numeric(NA), nrow(these_bp)),
-        AIC = rep(as.numeric(NA), nrow(these_bp)),
-        BIC = rep(as.numeric(NA), nrow(these_bp)),
-        m2LL = rep(as.numeric(NA), nrow(these_bp))
-      )
-    
-    
     bp_fit <- list()
     for(bp_index in 1:nrow(these_bp)){
       use_bp <- these_bp[bp_index, ]
@@ -489,7 +482,9 @@ get_best_fit_across_breakpoints <-
                                         fixed_bp = fixed_bp,
                                         survtimes = survtimes)
       loadNamespace("flexsurv")
-      bp_fit[[bp_index]] <- do.call(flexsurv::flexsurvreg, c(args, add_args))
+      suppressMessages(
+        bp_fit[[bp_index]] <- do.call(flexsurv::flexsurvreg, c(args, add_args))
+      )
    }
     bp_fit <- f_add_surv_fit_metrics(bp_fit)
     fit_quality_bp <- 
@@ -519,8 +514,6 @@ get_best_fit_across_breakpoints <-
     )
   }
 
-
-
 #' Get a list of arguments for fitting a piecewise survival curve
 #'
 #' @param these_bp break points.
@@ -536,7 +529,8 @@ get_survival_arg_list <-
 
       if (length(dists) != (num_breaks + 1))
         stop(
-          "length of dists must be one greater than number of breaks (except for special case of piecewise exponential)"
+          "length of dists must be one greater than number of breaks ",
+          "(except for special case of piecewise exponential)"
         )
       ## piecewise distribution with multiple distributions
       hfn_args_list <- haz_fn_args(dists)
