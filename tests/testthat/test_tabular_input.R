@@ -4,14 +4,14 @@ state_spec_file <- system.file(
   "tabular/test",
   "THR_test_states.csv",
   package = "heemod"
-) %>% 
+) %>%
   heemod:::read_file()
 
 state_spec <- data.frame(
   .state = c("PrimaryTHR", "SuccessfulPrimary",
              "RevisionTHR", "SuccessfulRevision",
              "Death"),
-  cost = c(0,0,5294, 0, 0),
+  cost = c(0, 0, 5294, 0, 0),
   qaly = c(0.0, 0.85, 0.30, 0.75, 0.00),
   .discount.qaly = c(0.01, NA, NA, NA, NA),
   stringsAsFactors = FALSE
@@ -21,7 +21,6 @@ test_that(
   "Normal state file input works.",
   {
     states1 <- heemod:::create_states_from_tabular(state_spec)
-    
     expect_output(
       print(states1),
       "A list of 5 states with 2 values each.

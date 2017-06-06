@@ -2,7 +2,7 @@
 % Please edit documentation in R/convenience.R
 \name{ae_val}
 \alias{ae_val}
-\title{Title}
+\title{Get (computed) values related to adverse events.}
 \usage{
 ae_val(ae_table, treatment, value)
 }
@@ -22,7 +22,7 @@ cost or disutility.}
 the requested value for the requested treatment
 }
 \description{
-Title
+Get (computed) values related to adverse events.
 }
 \details{
 The underlying function is memoised for efficiency.

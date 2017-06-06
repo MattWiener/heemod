@@ -4,8 +4,8 @@
 \alias{survival_from_data}
 \title{Title Get survival analysis curves from data}
 \usage{
-survival_from_data(location, survival_specs, use_envir = df_env,
-  dists = dists, save_fits = TRUE, just_load = FALSE,
+survival_from_data(location, survival_specs, dists = dists,
+  save_fits = TRUE, just_load = FALSE,
   set_definitions = "set_definitions.csv")
 }
 \arguments{
@@ -13,8 +13,6 @@ survival_from_data(location, survival_specs, use_envir = df_env,
 
 \item{survival_specs}{a data.frame containing information
 on how to perform each fit - see @details.}
-
-\item{use_envir}{An environment for the results to be saved in.}
 
 \item{dists}{the distributions to use to fit the survival function}
 
@@ -24,6 +22,8 @@ on how to perform each fit - see @details.}
 from \code{fit_files}}
 
 \item{set_definitions}{definitions of different subsets to fit}
+
+\item{use_envir}{An environment for the results to be saved in.}
 }
 \value{
 a tibble with columns \code{type}, \code{treatment}, \code{set_name},

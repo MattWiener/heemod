@@ -111,7 +111,7 @@ utility_by_time_from_death.cycle_counts <-
     subjects_by_cycle <- 
       counts %>% 
       dplyr::group_by_( ~ markov_cycle) %>%
-      dplyr::summarize_(., num_subjects = ~sum(count))
+      dplyr::summarize_(num_subjects = ~sum(count))
     num_subjects <- unique(round(subjects_by_cycle$num_subjects, 6))
     stopifnot(length(num_subjects) ==  1)
     if(any(util_before_death[, "until_lag"] <= 0))
@@ -205,7 +205,7 @@ utility_by_time_from_death.data.frame <-
   function(x, ...){
     x$markov_cycle <- 1:nrow(x)
     tidied <- tidyr::gather(x, key = "state_names", 
-                            value = "count", -markov_cycle)
+                            value = "count", -dplyr::matches("markov_cycle"))
     utility_by_time_from_death.cycle_counts(tidied, ...)
   }
 
@@ -287,11 +287,12 @@ linear_interpolation <- function(marked_cycles,
                           rule= c(2,2))
   
   if(is.null(age_start_change_per_cycle))
-    final_fn <- function(cycle, start_age = NULL) {pmax(decline_fn(cycle), min_val)}
+    final_fn <- function(cycle, start_age = NULL) {
+      pmax(decline_fn(cycle), min_val)
+      }
   else
-    final_fn <- function(cycle, start_age){
+    final_fn <- function(cycle, start_age = NULL){
       age_at_time <- cycle * cycle_length + start_age
-      ## print(cbind(age_at_time, (age_at_time - age_start_change_per_cycle - cycle_length)/cycle_length))
       pmax(ifelse(age_at_time < age_start_change_per_cycle, 1, 
                   decline_fn((age_at_time - age_start_change_per_cycle - cycle_length)/cycle_length)),
            min_val)
@@ -329,7 +330,7 @@ find_scaled_doses <- function(doses, dosing_units, scaling, scaling_units) {
     stop("scaling_units does not match denominator of dosing_units")
   
   #return results
-  res = doses*scaling
+  res <- doses * scaling
   res
 }
 
@@ -375,7 +376,6 @@ is_dosing_period <- function(N, init, pattern, first, then_every, cap = Inf){
   }
   if(!all(c(init, pattern) %in% c(0,1, TRUE, FALSE)))
     stop("all elements of init and pattern must be FALSE or 0 or TRUE or 1")
-  linit <- length(init)
   cond1 <- N <= length(init) & as.logical(init[N])
   cond2 <- N > length(init) & N <= cap
   cond3 <- as.logical(pattern[(N - length(init) - 1) %% length(pattern) + 1])
@@ -602,16 +602,17 @@ compute_vals_for_adv_ev_ <- function(ae_table){
      warning("NA values defined for AEs; converting to 0")
    }
   
+  ae_table[, other_names] <- 
+    ae_table[, other_names, drop = FALSE] * ae_table[, "prob"]
   res <- ae_table[, c("treatment", "prob", other_names)] %>% 
-    dplyr::group_by(treatment) %>%
-    dplyr::summarize_at(., .cols = other_names,
-                        .funs = funs(as.numeric(prob %*% .))) %>%
-    dplyr::ungroup()
+    dplyr::group_by_(~treatment) %>%
+      dplyr::summarize_at(.cols = other_names, .funs = "sum") %>%
+        dplyr::ungroup()
   res
 }
 compute_vals_for_adv_ev <- memoise(compute_vals_for_adv_ev_)
 
-#' Title
+#' Get (computed) values related to adverse events.
 #'
 #' @param ae_table a table with columns `treatment`, 
 #'   `ae` (the names of different adverse events), `prob`

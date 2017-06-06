@@ -368,8 +368,8 @@ construct_part_surv_tib <-
       ##  going directly to loading the files
       fit_tibble <-
         load_surv_models(location,
-                         check_survival_specs(survival_specs),
-                         env)[[1]]
+                         check_survival_specs(survival_specs)# , env)[[1]]
+        )[[1]]
       should_be_fits_3 <- join_fits_to_def(should_be_fits,
                                            fit_tibble)
   }

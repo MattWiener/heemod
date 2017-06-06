@@ -197,12 +197,12 @@ haz_fn_args <- function(dists){
 
 get_multi_dist_inits <- function(these_bp, dists, t){
   hfn_list <- haz_fn_args(dists)$hfns
-  ## go to flexsurv:::flexsurv.dists to get initialization functions
-  flexsurv_dists <- match(dists, names(flexsurv:::flexsurv.dists))
+  ## go to flexsurv::flexsurv.dists to get initialization functions
+  flexsurv_dists <- match(dists, names(flexsurv::flexsurv.dists))
   init_vals <- 
     lapply(seq(along = dists), 
          function(i){
-           init_fn <- flexsurv:::flexsurv.dists[[flexsurv_dists[i]]]$inits
+           init_fn <- flexsurv::flexsurv.dists[[flexsurv_dists[i]]]$inits
            if("aux" %in% names(formals(init_fn)))
              init_fn(t, aux = list(counting = TRUE))
            else

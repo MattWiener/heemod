@@ -102,12 +102,12 @@ f_find_best_piecewise_survival_models <-
 		stop("dists list must have same length as num_pieces.")
 	
 	## make a list of the subgroups, and add a group of all together
-	survdata = args_for_fit[["survdata"]]
-	treatment_col_name = args_for_fit[["treatment_col_name"]]
+	survdata <- args_for_fit[["survdata"]]
+	treatment_col_name <- args_for_fit[["treatment_col_name"]]
 	unique_groups <- as.character(unique(survdata[,treatment_col_name]))
 	groups_list <- c(list(unique_groups))
 	names(groups_list) <- c("all")
-	library("flexsurv")
+	attachNamespace("flexsurv")
 #	if(fit_indiv_groups)
 #	{
 #		groups_list <- c(as.list(unique_groups), list(unique_groups))
@@ -329,7 +329,6 @@ f_find_best_with_fixed_num_pieces <-
 	
   dist_fits <- list()
   dist_fit_breaks <- list()
-  dist_model_defs <- list()
   for(dist_index in 1:nrow(dists)){
     use_dists <- dists[dist_index,]
     
@@ -339,12 +338,11 @@ f_find_best_with_fixed_num_pieces <-
     dist_fits[[dist_index]] <- list(model_def = best_fit_across_bp$struc,
                                     fit = best_fit_across_bp$fit)
     dist_fit_breaks[[dist_index]] <- best_fit_across_bp$breakpoints
-    ## dist_model_defs[[dist_index]] <- best_fit_across_bp$struc
-      
+
     fit_quality_across_dists[dist_index, "set"] <- dist_index 
-    fit_quality_across_dists[dist_index, "AIC"] = best_fit_across_bp$fit$AIC
-    fit_quality_across_dists[dist_index, "BIC"] = best_fit_across_bp$fit$BIC
-    fit_quality_across_dists[dist_index, "m2LL"] = best_fit_across_bp$fit$m2LL
+    fit_quality_across_dists[dist_index, "AIC"] <- best_fit_across_bp$fit$AIC
+    fit_quality_across_dists[dist_index, "BIC"] <- best_fit_across_bp$fit$BIC
+    fit_quality_across_dists[dist_index, "m2LL"] <- best_fit_across_bp$fit$m2LL
   }
   if(best_only){
   	best_model_ind_across_dists <- 
@@ -352,12 +350,6 @@ f_find_best_with_fixed_num_pieces <-
   	
   	
   	return(dist_fits[[best_model_ind_across_dists]])
-  	##list(model_def = dist_model_defs[[best_model_ind_across_dists]],
-  	##		            fit = dist_fits[[best_model_ind_across_dists]])
-  	
-  	##return(list(
-    ##      	  best = best_mod)
-    ##      	)
   }
   else{
     return(list(fits = dist_fits,

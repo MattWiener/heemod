@@ -9,14 +9,13 @@
 \usage{
 survival_fits_from_tabular(base_dir, ref_file, ...)
 
-survival_fits_from_ref_struc(ref, df_env = new.env(), save_fits = FALSE,
+survival_fits_from_ref_struc(ref, save_fits = FALSE, just_load = FALSE)
+
+partitioned_survival_from_tabular(base_dir, ref_file, state_names,
+  save_fits = FALSE, just_load = FALSE)
+
+partitioned_survival_from_ref_struc(ref, state_names, save_fits = FALSE,
   just_load = FALSE)
-
-partitioned_survival_from_tabular(base_dir, ref_file, df_env, state_names,
-  save_fits = FALSE, just_load = FALSE)
-
-partitioned_survival_from_ref_struc(ref, df_env, state_names,
-  save_fits = FALSE, just_load = FALSE)
 }
 \arguments{
 \item{base_dir}{directory where the reference file is located}
@@ -28,13 +27,13 @@ partitioned_survival_from_ref_struc(ref, df_env, state_names,
 
 \item{ref}{data frame read from the reference file.}
 
-\item{df_env}{an environment in which survival results will be stored}
-
 \item{save_fits}{should the models be saved to disk?}
 
 \item{just_load}{should we just load the models instead of fitting?}
 
 \item{state_names}{names of states in the strategies}
+
+\item{df_env}{an environment in which survival results will be stored}
 }
 \value{
 a tibble of partitioned survival objects
@@ -52,7 +51,8 @@ Create a partitioned survival model object from tabular input
 \examples{
 fit_tibble <- partitioned_survival_from_tabular(system.file("tabular/surv",
                                                             package = "heemod"), 
-                                  "example_oncSpecs.csv", new.env(), 
+                                  "example_oncSpecs.csv", 
+                                  # new.env(),
                                   c("ProgressionFree", "Progressive", 
                                   "Terminal", "Death"), 
                                   save_fits = FALSE,

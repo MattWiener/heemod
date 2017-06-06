@@ -24,7 +24,8 @@ allowed_fit_distributions <- c("exp", "weibull", "lnorm", "llogis",
 #' @examples 
 #' fit_tibble <- partitioned_survival_from_tabular(system.file("tabular/surv",
 #'                                                             package = "heemod"), 
-#'                                   "example_oncSpecs.csv", new.env(), 
+#'                                   "example_oncSpecs.csv", 
+#'                                   # new.env(),
 #'                                   c("ProgressionFree", "Progressive", 
 #'                                   "Terminal", "Death"), 
 #'                                   save_fits = FALSE,
@@ -37,7 +38,7 @@ survival_fits_from_tabular <- function(base_dir, ref_file, ...) {
 
 #' @rdname survival_fits_from_tabular
 #' @export
-survival_fits_from_ref_struc <- function(ref, df_env = new.env(),
+survival_fits_from_ref_struc <- function(ref, ## df_env = new.env(),
                                          save_fits = FALSE, just_load = FALSE){  
   surv_ref_full_file <- ref[ref$data == "tm", "full_file"]
   surv_ref_file <- ref[ref$data == "tm", "file"]
@@ -51,7 +52,7 @@ survival_fits_from_ref_struc <- function(ref, df_env = new.env(),
   ##          "gamma", "gompertz", "gengamma")
   survival_from_data(location,
                      survival_specs,
-                     use_envir = df_env,
+                     # use_envir = df_env,
                      dists = allowed_fit_distributions, 
                      save_fits = save_fits,
                      just_load = just_load)
@@ -62,24 +63,24 @@ survival_fits_from_ref_struc <- function(ref, df_env = new.env(),
 #' @export
 #' @rdname survival_fits_from_tabular
 partitioned_survival_from_tabular <- 
-  function(base_dir, ref_file, df_env,
+  function(base_dir, ref_file, ##df_env,
            state_names,
            save_fits = FALSE, just_load = FALSE) {
   
   ref <- read_file(file.path(base_dir, ref_file))
   
-  surv_inputs <- survival_fits_from_tabular(base_dir, ref_file, df_env, 
+  surv_inputs <- survival_fits_from_tabular(base_dir, ref_file, ##df_env, 
                              save_fits, just_load)
   part_survs_from_surv_inputs(surv_inputs, state_names)
 }
 
 #' @export
 #' @rdname survival_fits_from_tabular
-partitioned_survival_from_ref_struc <- function(ref, df_env,
+partitioned_survival_from_ref_struc <- function(ref, ##df_env,
                                               state_names,
                                               save_fits = FALSE, 
                                               just_load = FALSE) {
-  surv_inputs <- survival_fits_from_ref_struc(ref, df_env, 
+  surv_inputs <- survival_fits_from_ref_struc(ref, ##df_env, 
                                             save_fits, just_load)
   part_survs_from_surv_inputs(surv_inputs[[1]], state_names)
 }
@@ -120,7 +121,7 @@ partitioned_survival_from_ref_struc <- function(ref, df_env,
 survival_from_data <- 
   function(location,
            survival_specs,
-           use_envir = df_env,
+           # use_envir = df_env,
            dists = dists,
            save_fits = TRUE,
            just_load = FALSE,
@@ -129,7 +130,7 @@ survival_from_data <-
     survival_specs <- check_survival_specs(survival_specs)
     
     if(just_load){
-      return(load_surv_models(location, survival_specs, use_envir))
+      return(load_surv_models(location, survival_specs)) ##, use_envir))
    }
     else{
       ## going to check whether we have an absolute directory
@@ -281,7 +282,6 @@ survival_from_data <-
 
     names(surv_models) <- survival_specs$fit_name
     do.call("rbind", surv_models)
-##    list(do.call("rbind", surv_models), env = use_envir)
   }
 
 

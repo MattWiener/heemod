@@ -246,20 +246,21 @@ prepare_plot_data_from_fit_tibble <-
     survival_summaries <- 
       fit_tib %>% 
         dplyr::group_by_(~ type, ~ treatment, ~ set_name, ~ dist) %>%
-          dplyr::do(summary_helper(.$fit[[1]], type = "survival", tidy = TRUE)) %>%
+          dplyr::do(summary_helper(., type = "survival", tidy = TRUE)) %>%
             dplyr::ungroup()
     survival_summaries$fn <- "survival"
     cumhaz_summaries <- 
       fit_tib %>% 
       dplyr::group_by_(~ type, ~ treatment, ~ set_name, ~ dist) %>%
-      dplyr::do(summary_helper(.$fit[[1]], type = "cumhaz", 
+      dplyr::do(summary_helper(., type = "cumhaz", 
                                tidy = TRUE, B = B_ci)) %>%
       dplyr::ungroup()
     cumhaz_summaries$fn <- "cumulative hazard"
     rbind(survival_summaries, cumhaz_summaries)
   }
 
-summary_helper <- function(fit, type, ...){
+summary_helper <- function(fit_holder, type, ...){
+  fit <- fit_holder$fit[[1]]
   stopifnot(inherits(fit, c("flexsurvreg", "survfit", "surv_shift",
                             "surv_projection")))
     res1 <- summary(fit, type = type, 
@@ -400,7 +401,7 @@ plot_fit_data <- function(data_to_plot,
       ggplot2::guides(color = ggplot2::guide_legend(override.aes = list(size = 1.5)))
   if(groups == "dist")
     res <- res + 
-    ggplot2::geom_step(ggplot2::aes(x = time, y = est), 
+    ggplot2::geom_step(ggplot2::aes_string(x = "time", y = "est"), 
                        data = dplyr::filter_(data_to_plot, 
                                              ~ dist == "km"), 
                        col = "black", 
@@ -414,7 +415,7 @@ plot_fit_data <- function(data_to_plot,
   }
   res <- res + ggplot2::labs(y = plot_type, x = time_label, title = title)
   res <- 
-    res + ggplot2::theme(axis.title = element_text(size = ggplot2::rel(label_size)))
+    res + ggplot2::theme(axis.title = ggplot2::element_text(size = ggplot2::rel(label_size)))
   res <- res + ggplot2::theme(legend.position = legend_loc)
   res
 }
@@ -503,7 +504,7 @@ plot_fit_tibble <-
           function(i){
             x <- not_km[i,]
             prepare_plot_data_from_fit_tibble(x, B_ci = B_ci) %>%
-              dplyr::filter(time > x$time_subtract)
+              dplyr::filter_(~time > x$time_subtract)
           })
     not_km_plot_data_2 <- dplyr::bind_rows(not_km_plot_data)
     km_plot_data <- prepare_plot_data_from_fit_tibble(for_km)
@@ -581,7 +582,7 @@ plot_cloglog_fit_tibble <-
     res_cloglog <- 
       res_cloglog + ggplot2::geom_hline(yintercept = 1,
                                         lty = "dashed") + 
-      geom_line(size = 1.25)
+      ggplot2::geom_line(size = 1.25)
     use_title <- paste(type, " for subset '", set_name, "'", sep = "")
     res_cloglog <- res_cloglog + ggplot2::ggtitle(use_title)
     res_cloglog

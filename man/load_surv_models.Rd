@@ -4,7 +4,7 @@
 \alias{load_surv_models}
 \title{Load a set of survival fits}
 \usage{
-load_surv_models(location, survival_specs, use_envir)
+load_surv_models(location, survival_specs)
 }
 \arguments{
 \item{location}{base directory}

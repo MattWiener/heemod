@@ -510,13 +510,13 @@ summary.surv_projection <-
       .internal = TRUE)
     res1 <- res1[!is.na(res1$est),]
     res2 <- res2[!is.na(res2$est),]
-    res1 <- dplyr::filter(res1, time < object$at)
-    res2 <- dplyr::filter(res2, time >= object$at)
+    res1 <- dplyr::filter_(res1, ~time < object$at)
+    res2 <- dplyr::filter_(res2, ~time >= object$at)
     time_col <- match("time", names(res2))
     res2[, -time_col] <-
       res2[, -time_col] * surv1_p_at/surv2_p_at
     res <- dplyr::bind_rows(res1, res2) %>%
-      dplyr::arrange(time)
+      dplyr::arrange_(~time)
     if(type == "cumhaz")
       res[, -time_col] <- -log(res[, -time_col])
     res

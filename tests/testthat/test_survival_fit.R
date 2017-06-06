@@ -159,8 +159,8 @@ test_that("fitting works (including with subsets)",
               heemod:::survival_from_data(location = location,
                                           survival_specs = not_ok_surv_info,
                                           dists = c("exp", "weibull"),
-                                          save_fits = FALSE,
-                                          use_envir = new.env()),
+                                          save_fits = FALSE), #,
+                                          # use_envir = new.env()),
               "censoring status column 'status2' does not exist in data file"
               
             )
@@ -168,8 +168,8 @@ test_that("fitting works (including with subsets)",
               heemod:::survival_from_data(location = location,
                                  survival_specs = ok_surv_info,
                                  dists = c("exp", "weibull"),
-                                 save_fits = FALSE,
-                                 use_envir = new.env())
+                                 save_fits = FALSE) #,
+                                 #use_envir = new.env())
             expect_identical(names(these_fits), ##c("", "env"))
             ##expect_identical(names(these_fits[[1]]),
                              c("type", "treatment", "set_name",
@@ -217,8 +217,8 @@ test_that("fitting works (including with subsets)",
               heemod:::survival_from_data(location = location,
                                           survival_specs = abs_path_surv_info,
                                           dists = c("exp", "weibull"),
-                                          save_fits = FALSE,
-                                          use_envir = new.env())
+                                          save_fits = FALSE)#,
+                                          # use_envir = new.env())
             ## metrics <- extract_surv_fit_metrics(abs_path_fits[[1]])
             metrics <- extract_surv_fit_metrics(abs_path_fits)
             expect_identical(names(metrics),
@@ -246,8 +246,8 @@ test_that("fitting works (including with subsets)",
               heemod:::survival_from_data(location = location,
                                           survival_specs = eventcode_surv_info_error,
                                           dists = c("exp", "weibull"),
-                                          save_fits = FALSE,
-                                          use_envir = new.env()),
+                                          save_fits = FALSE) ,
+                                          #use_envir = new.env()),
               "non-matching values in status; all values should be either 'event' or 'censor'"
             )
             
@@ -259,8 +259,8 @@ test_that("fitting works (including with subsets)",
               heemod:::survival_from_data(location = location,
                                           survival_specs = eventcode_surv_info,
                                           dists = c("exp", "weibull"),
-                                          save_fits = FALSE,
-                                          use_envir = new.env())
+                                          save_fits = FALSE) #,
+                                          #use_envir = new.env())
             ## this should have same results as earlier fits
             # expect_identical(lapply(these_fits[[1]]$fit, compute_surv, time = c(45:55)),
             #                  lapply(eventcode_fits[[1]]$fit, compute_surv, time = c(45:55))
@@ -275,7 +275,7 @@ test_that("fitting works (including with subsets)",
                                           survival_specs = ok_surv_info,
                                           dists = c("exp", "weibull"),
                                           save_fits = FALSE,
-                                          use_envir = new.env(),
+                                          ## use_envir = new.env(),
                                           set_definitions = "set_def_pfs_os.csv")
             ##expect_identical(unique(subset_fits_by_type[[1]][, 1:3]),
             expect_identical(unique(subset_fits_by_type[, 1:3]),
