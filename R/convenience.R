@@ -602,7 +602,7 @@ compute_vals_for_adv_ev_ <- function(ae_table){
   ##   if some are actually undefined (that is, not given
   ##   for any treatment), make them 0
   other_names <- setdiff(names(ae_table), required_names)
-  values <- ae_table[, c("ae", other_names)]
+  values <- dplyr::distinct(ae_table[, c("ae", other_names)])
   values <- values[stats::complete.cases(values), ]
   if(any(is.na(ae_table[, -match(required_names, names(ae_table))]))){
     ae_table <- dplyr::left_join(ae_table[, required_names], 
