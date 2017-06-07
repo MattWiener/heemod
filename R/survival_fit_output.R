@@ -335,7 +335,7 @@ plot_fit_data <- function(data_to_plot,
   plot_type <- match.arg(plot_type)
   default_logy <- data.frame(
     plot_type = c("survival", "cumulative hazard", "log cumulative hazard"),
-    logy = c(TRUE, FALSE, TRUE)
+    logy = c(FALSE, FALSE, TRUE)
   )
   if(is.null(logy))
     logy <- default_logy$logy[match(plot_type, default_logy$plot_type)]
