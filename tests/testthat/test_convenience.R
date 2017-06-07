@@ -48,6 +48,13 @@ test_that("functions for AE values work",
                          "no AE information returned")
             expect_error(ae_val(AEs, "A", "novalue"),
                          "no column")
+
+            AEs5 <- AEs
+            AEs5$cost[c(3,4)] <- NA
+            expect_equal(ae_val(AEs5, "A", "cost"), 30)
+            expect_equal(ae_val(AEs5, "B", "cost"), 20)
+            expect_equal(ae_val(AEs5, "A", "disutility"), 0.01)
+            expect_equal(ae_val(AEs5, "B", "disutility"), 0)
             
           })
 
