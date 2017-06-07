@@ -399,7 +399,6 @@ is_dosing_period <- function(N, init, pattern, first, then_every, cap = Inf){
 #' find_least_cost_partition(450, available_units = units)
 #' temp <- find_least_cost_partition(sample(250:450, 10, replace = TRUE), 
 #'    available_units = units)
-
 find_least_cost_partition <-
   function(desired_dose,
            available_units,
@@ -414,7 +413,7 @@ find_least_cost_partition <-
     if (!all(c("size", "cost") %in% names(available_units))){
       stop("available_units must have columns 'size' and 'cost'")
     }
-      
+    
     if (is.null(subset_col) + is.null(subset_val) == 1)
       stop("subset_col and subset_val should either both be NULL, or both be set")
     if (!is.null(subset_col) & !is.null(subset_val)) {
@@ -439,28 +438,46 @@ find_least_cost_partition <-
     ## set up the problem for lpSolve
     constraint_coefs <- matrix(available_units[, "size"],
                                nrow = 1, byrow = TRUE)
-    output_list <- lapply(desired_dose, function(this_dose) {
-      lp_soln <-
-        lpSolve::lp("min",
-           available_units[, "cost"], 
-           constraint_coefs,      ## vial sizes
-           ">=",                  ## must get at least the dose
-           this_dose,
-           all.int = TRUE)
-      actual_cost <- lp_soln$objval
-      used_dose <- lp_soln$solution %*% available_units[, "size"]
-      waste <- used_dose - this_dose
-      output_list <-
-        data.frame(this_dose, used_dose, waste, actual_cost)
-    })
-    ## combine outputs for all doses
+    original_dose <- desired_dose
+    
+    output_list <- lapply(unique(desired_dose), 
+                          function(this_dose){
+                            opt_fn(this_dose, available_units, constraint_coefs)
+                          }
+    )
+    
+    #   ## combine outputs for all doses
     output_list <- do.call("rbind", output_list)
     names(output_list) <- c("desired_dose", "used_dose", 
                             "waste", "cost") 
     output_list$cost.no.waste <-
       round(with(output_list, cost * desired_dose/used_dose), 2)
-    output_list
+    output_list[match(original_dose, output_list$desired_dose),]
   }
+
+
+
+opt_fn_ <- function(this_dose, available_units, constraint_coefs){
+  lp_soln <-
+    lpSolve::lp("min",
+                available_units[, "cost"], 
+                constraint_coefs,      ## vial sizes
+                ">=",                  ## must get at least the dose
+                this_dose,
+                all.int = TRUE)
+  actual_cost <- lp_soln$objval
+  used_dose <- lp_soln$solution %*% available_units[, "size"]
+  waste <- used_dose - this_dose
+  output_list <-
+    data.frame(this_dose, used_dose, waste, actual_cost)
+  output_list
+}
+
+opt_fn <- memoise::memoise(opt_fn_)
+
+
+
+
 
 
 #' Cost of administration for an intravenous treatment
