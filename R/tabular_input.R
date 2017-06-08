@@ -1374,18 +1374,11 @@ check_survival_specs <-
 #'
 #' @param location base directory
 #' @param survival_specs information about fits
-#' @param use_envir an environment
 #'
-#' @return A list with two elements:  \itemize{
-#'    \item{`best_models`, 
-#'    a list with the fits for each data file passed in; and} 
-#'    \item{`envir`, 
-#'    an environment containing the models so they can be referenced to 
-#'    get probabilities.}
-#'    }
+#' @return  a list with the fits for each data file passed in
 #' @export
 #'
-load_surv_models <- function(location, survival_specs){ #, use_envir){
+load_surv_models <- function(location, survival_specs){
   fit_files <- file.path(location,
                          survival_specs$fit_directory,
                          survival_specs$fit_file)
@@ -1396,6 +1389,5 @@ load_surv_models <- function(location, survival_specs){ #, use_envir){
   }
   surv_models <- mget(survival_specs$fit_name)
   names(surv_models) <- survival_specs$fit_name
-  list(do.call("rbind", mget(survival_specs$fit_name))) #,
-#       env = use_envir)
+  list(do.call("rbind", mget(survival_specs$fit_name)))
 }

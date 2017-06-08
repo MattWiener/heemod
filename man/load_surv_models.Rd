@@ -10,17 +10,9 @@ load_surv_models(location, survival_specs)
 \item{location}{base directory}
 
 \item{survival_specs}{information about fits}
-
-\item{use_envir}{an environment}
 }
 \value{
-A list with two elements:  \itemize{
-\item{\code{best_models},
-a list with the fits for each data file passed in; and}
-\item{\code{envir},
-an environment containing the models so they can be referenced to
-get probabilities.}
-}
+a list with the fits for each data file passed in
 }
 \description{
 Load a set of survival fits

@@ -77,7 +77,7 @@ test_that("reading set definitions works",
                                                        2),
                                         condition = rep(rep(c("TRUE", "time > 100"), each = 2),
                                                         2),
-                                        subtract_time = rep(rep(as.integer(c(NA, 100)), each = 2),
+                                        time_subtract = rep(rep(c(0, 100), each = 2),
                                                             2),
                                         stringsAsFactors = FALSE
                                         )
@@ -90,6 +90,7 @@ test_that("reading set definitions works",
                                         treatment = rep("fake_treatment", 2),
                                         set_name = rep("all", 2), 
                                         condition = rep("TRUE", 2),
+                                        time_subtract = c(0, 0),
                                         stringsAsFactors = FALSE)
                              )
             expect_error(get_set_definitions(system.file("tabular/surv", package = "heemod"),
@@ -97,6 +98,11 @@ test_that("reading set definitions works",
                          "set_definitions file missing column(s): treatment, set_name",
                          fixed = TRUE
                          )
+            expect_error(get_set_definitions(system.file("tabular/surv", package = "heemod"),
+                                             "set_definitions_error_2.csv"),
+                         "bad offset in set_definitions",
+                         fixed = TRUE
+            )
             expect_error(get_set_definitions(system.file("tabular/surv", package = "heemod"),
                                              "set_definitions_3.csv"),
                          "multiple definitions of some sets"
@@ -246,9 +252,9 @@ test_that("fitting works (including with subsets)",
               heemod:::survival_from_data(location = location,
                                           survival_specs = eventcode_surv_info_error,
                                           dists = c("exp", "weibull"),
-                                          save_fits = FALSE) ,
-                                          #use_envir = new.env()),
-              "non-matching values in status; all values should be either 'event' or 'censor'"
+                                          save_fits = FALSE),
+              "all values should be either 'event' (for events) or 'censor' (for censoring)",
+              fixed = TRUE
             )
             
             ## make sure we run correctly if we specify correct event codes
@@ -259,8 +265,7 @@ test_that("fitting works (including with subsets)",
               heemod:::survival_from_data(location = location,
                                           survival_specs = eventcode_surv_info,
                                           dists = c("exp", "weibull"),
-                                          save_fits = FALSE) #,
-                                          #use_envir = new.env())
+                                          save_fits = FALSE) 
             ## this should have same results as earlier fits
             # expect_identical(lapply(these_fits[[1]]$fit, compute_surv, time = c(45:55)),
             #                  lapply(eventcode_fits[[1]]$fit, compute_surv, time = c(45:55))

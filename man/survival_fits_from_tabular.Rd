@@ -32,8 +32,6 @@ partitioned_survival_from_ref_struc(ref, state_names, save_fits = FALSE,
 \item{just_load}{should we just load the models instead of fitting?}
 
 \item{state_names}{names of states in the strategies}
-
-\item{df_env}{an environment in which survival results will be stored}
 }
 \value{
 a tibble of partitioned survival objects

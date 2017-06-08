@@ -22,8 +22,6 @@ on how to perform each fit - see @details.}
 from \code{fit_files}}
 
 \item{set_definitions}{definitions of different subsets to fit}
-
-\item{use_envir}{An environment for the results to be saved in.}
 }
 \value{
 a tibble with columns \code{type}, \code{treatment}, \code{set_name},

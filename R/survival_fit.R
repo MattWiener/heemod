@@ -6,7 +6,6 @@ allowed_fit_distributions <- c("exp", "weibull", "lnorm", "llogis",
 #' @param base_dir directory where the reference file is located
 #' @param ref_file Name of the reference file.
 #' @param ref data frame read from the reference file.
-#' @param df_env an environment in which survival results will be stored
 #' @param state_names names of states in the strategies
 #' @param save_fits should the models be saved to disk?
 #' @param just_load should we just load the models instead of fitting?
@@ -38,7 +37,7 @@ survival_fits_from_tabular <- function(base_dir, ref_file, ...) {
 
 #' @rdname survival_fits_from_tabular
 #' @export
-survival_fits_from_ref_struc <- function(ref, ## df_env = new.env(),
+survival_fits_from_ref_struc <- function(ref, 
                                          save_fits = FALSE, just_load = FALSE){  
   surv_ref_full_file <- ref[ref$data == "tm", "full_file"]
   surv_ref_file <- ref[ref$data == "tm", "file"]
@@ -52,7 +51,6 @@ survival_fits_from_ref_struc <- function(ref, ## df_env = new.env(),
   ##          "gamma", "gompertz", "gengamma")
   survival_from_data(location,
                      survival_specs,
-                     # use_envir = df_env,
                      dists = allowed_fit_distributions, 
                      save_fits = save_fits,
                      just_load = just_load)
@@ -63,24 +61,24 @@ survival_fits_from_ref_struc <- function(ref, ## df_env = new.env(),
 #' @export
 #' @rdname survival_fits_from_tabular
 partitioned_survival_from_tabular <- 
-  function(base_dir, ref_file, ##df_env,
+  function(base_dir, ref_file,
            state_names,
            save_fits = FALSE, just_load = FALSE) {
   
   ref <- read_file(file.path(base_dir, ref_file))
   
-  surv_inputs <- survival_fits_from_tabular(base_dir, ref_file, ##df_env, 
+  surv_inputs <- survival_fits_from_tabular(base_dir, ref_file, 
                              save_fits, just_load)
   part_survs_from_surv_inputs(surv_inputs, state_names)
 }
 
 #' @export
 #' @rdname survival_fits_from_tabular
-partitioned_survival_from_ref_struc <- function(ref, ##df_env,
+partitioned_survival_from_ref_struc <- function(ref, 
                                               state_names,
                                               save_fits = FALSE, 
                                               just_load = FALSE) {
-  surv_inputs <- survival_fits_from_ref_struc(ref, ##df_env, 
+  surv_inputs <- survival_fits_from_ref_struc(ref, 
                                             save_fits, just_load)
   part_survs_from_surv_inputs(surv_inputs[[1]], state_names)
 }
@@ -91,7 +89,6 @@ partitioned_survival_from_ref_struc <- function(ref, ##df_env,
 #' @param survival_specs a data.frame containing information
 #'   on how to perform each fit - see @details.
 #' @param dists the distributions to use to fit the survival function
-#' @param use_envir An environment for the results to be saved in.
 #' @param save_fits should fits be saved to disk?  Can be useful for testing.
 #' @param just_load If TRUE, data files are ignored in favor of loading fits
 #'    from `fit_files`
@@ -121,7 +118,6 @@ partitioned_survival_from_ref_struc <- function(ref, ##df_env,
 survival_from_data <- 
   function(location,
            survival_specs,
-           # use_envir = df_env,
            dists = dists,
            save_fits = TRUE,
            just_load = FALSE,
@@ -130,7 +126,7 @@ survival_from_data <-
     survival_specs <- check_survival_specs(survival_specs)
     
     if(just_load){
-      return(load_surv_models(location, survival_specs)) ##, use_envir))
+      return(load_surv_models(location, survival_specs))
    }
     else{
       ## going to check whether we have an absolute directory
@@ -161,42 +157,39 @@ survival_from_data <-
                 this_data <- 
                  read_file(data_files[this_row]) %>%
                   dplyr::filter_(filter_str)
+                
                 ## set up the event values: 1 for event, 0 for censored
-                this_censor_col <- survival_specs[this_row, "censor_col"]
-                if(!this_censor_col %in% names(this_data))
-                  stop("censoring status column '",
-                       this_censor_col,
-                       "' does not exist in data file '",
-                       data_files[this_row],
-                       "'")
-                this_data[, this_censor_col] <-
-                  match(this_data[, this_censor_col],
-                        c(survival_specs[this_row, "censor_code"],
-                          survival_specs[this_row, "event_code"])) - 1
-                if(any(is.na(this_data[, this_censor_col])))
-                  stop("non-matching values in ", this_censor_col,
-                       "; all values should be either '",
-                       survival_specs[this_row, "event_code"],
-                       "' or '",
-                       survival_specs[this_row, "censor_code"],
-                       "'")
+                this_data <- 
+                  fix_censor_col(this_data, 
+                                 survival_specs[this_row, "censor_col"],
+                                 survival_specs[this_row, "censor_code"],
+                                 survival_specs[this_row, "event_code"],
+                                 data_files[this_row])
+                
+                # this_censor_col <- survival_specs[this_row, "censor_col"]
+                # if(!this_censor_col %in% names(this_data))
+                #   stop("censoring status column '",
+                #        this_censor_col,
+                #        "' does not exist in data file '",
+                #        data_files[this_row],
+                #        "'")
+                # this_data[, this_censor_col] <-
+                #   match(this_data[, this_censor_col],
+                #         c(survival_specs[this_row, "censor_code"],
+                #           survival_specs[this_row, "event_code"])) - 1
+                # if(any(is.na(this_data[, this_censor_col])))
+                #   stop("non-matching values in ", this_censor_col,
+                #        "; all values should be either '",
+                #        survival_specs[this_row, "event_code"],
+                #        "' or '",
+                #        survival_specs[this_row, "censor_code"],
+                #        "'")
                 ## get set definitions, if there are any
                 ## (if not, will return a data frame with no rows)
                 set_definitions <- 
                   get_set_definitions(file.path(location, 
                                                 survival_specs$fit_directory[this_row]),
                                       file_name = set_definitions)
-                if(!("time_subtract" %in% names(set_definitions)))
-                  set_definitions <- dplyr::mutate_(set_definitions, time_subtract = 0)
-                set_definitions <- 
-                  set_definitions %>% 
-                    dplyr::mutate_(time_subtract = ~ifelse(is.na(time_subtract), 
-                                                            0, time_subtract))
-                neg_offset <- which(set_definitions$time_subtract < 0)
-                if(length(neg_offset))
-                  stop("bad offset in set_definitions line(s) ",
-                       paste(neg_offset, collapse = ", ")
-                  )
                 
                 class(this_data) <- c("survdata", class(this_data))
                
@@ -299,7 +292,7 @@ get_set_definitions <- function(data_dir, file_name = "set_definitions"){
                         names(set_definitions))
   extra_names <- setdiff(names(set_definitions),
                          c("treatment", "set_name", 
-                           "condition", "subtract_time"))
+                           "condition", "time_subtract"))
   extra_names <- extra_names[!grep("^.comment", extra_names)]
   if(length(missing_names) > 0)
     stop("set_definitions file missing column(s): ",
@@ -328,6 +321,17 @@ get_set_definitions <- function(data_dir, file_name = "set_definitions"){
     stop("it appears you have multiple definitions of some sets: ",
          set_definitions[dups, c("treatment", "type", "set_name", "condition")])
   }
+  if(!("time_subtract" %in% names(set_definitions)))
+    set_definitions <- dplyr::mutate_(set_definitions, time_subtract = 0)
+  set_definitions <- 
+    set_definitions %>% 
+    dplyr::mutate_(time_subtract = ~ifelse(is.na(time_subtract), 
+                                           0, time_subtract))
+  neg_offset <- which(set_definitions$time_subtract < 0)
+  if(length(neg_offset))
+    stop("bad offset in set_definitions line(s) ",
+         paste(neg_offset, collapse = ", ")
+    )
   set_definitions
 }
 
@@ -420,7 +424,8 @@ f_fit_survival_models <-
       lapply(1:nrow(conditions), function(i){
         this_group_set <- groups_list[[ conditions[i, "group"] ]]
         this_data <- 
-          survdata[survdata[[treatment_col_name]] %in% this_group_set,]
+          survdata[survdata[[treatment_col_name]] %in% this_group_set,
+                   c(time_col_name, censor_col_name, treatment_col_name)]
         ## only include the treatment group in the formula
         ##   if there is more than one treatment in the data set
         num_treatments <- length(unique(this_data[, treatment_col_name]))
@@ -571,3 +576,45 @@ extract_surv_fit_metrics <-
        dplyr::do_(~data.frame(.$fit[metric]))
      tibble::as_tibble(cbind.data.frame(fit_tib, extracted))
   }
+
+
+
+#' Recode censoring / event column
+#'
+#' @param this_data data set
+#' @param this_censor_col the column to change
+#' @param censor_code code for censoring
+#' @param event_code code for events
+#' @param file_name the name of the file this came from,
+#'   in case it's needed for an error message
+#'
+#' @return the same data set, with the column recoded
+#'
+fix_censor_col <- function(this_data, this_censor_col,
+                           censor_code, event_code,
+                           file_name) {
+  ## set up the event values: 1 for event, 0 for censored
+  ## this_censor_col <- survival_specs[this_row, "censor_col"]
+  if (!this_censor_col %in% names(this_data))
+    stop(
+      "censoring status column '",
+      this_censor_col,
+      "' does not exist in data file '",
+      file_name,
+      "'"
+    )
+  this_data[, this_censor_col] <-
+    match(this_data[, this_censor_col],
+          c(censor_code, event_code)) - 1
+  if (any(is.na(this_data[, this_censor_col])))
+    stop(
+      "non-matching values in ",
+      this_censor_col,
+      "; all values should be either '",
+      event_code,
+      "' (for events) or '",
+      censor_code,
+      "' (for censoring)"
+    )
+  this_data
+}
