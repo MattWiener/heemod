@@ -50,7 +50,6 @@ Create a partitioned survival model object from tabular input
 fit_tibble <- partitioned_survival_from_tabular(system.file("tabular/surv",
                                                             package = "heemod"), 
                                   "example_oncSpecs.csv", 
-                                  # new.env(),
                                   c("ProgressionFree", "Progressive", 
                                   "Terminal", "Death"), 
                                   save_fits = FALSE,

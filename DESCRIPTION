@@ -52,6 +52,7 @@ Suggests:
     rmarkdown,
     stringr,
     survival,
+    survminer,
     testthat,
     triangle,
     XLConnect

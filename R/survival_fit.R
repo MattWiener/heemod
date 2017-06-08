@@ -24,7 +24,6 @@ allowed_fit_distributions <- c("exp", "weibull", "lnorm", "llogis",
 #' fit_tibble <- partitioned_survival_from_tabular(system.file("tabular/surv",
 #'                                                             package = "heemod"), 
 #'                                   "example_oncSpecs.csv", 
-#'                                   # new.env(),
 #'                                   c("ProgressionFree", "Progressive", 
 #'                                   "Terminal", "Death"), 
 #'                                   save_fits = FALSE,
@@ -166,24 +165,6 @@ survival_from_data <-
                                  survival_specs[this_row, "event_code"],
                                  data_files[this_row])
                 
-                # this_censor_col <- survival_specs[this_row, "censor_col"]
-                # if(!this_censor_col %in% names(this_data))
-                #   stop("censoring status column '",
-                #        this_censor_col,
-                #        "' does not exist in data file '",
-                #        data_files[this_row],
-                #        "'")
-                # this_data[, this_censor_col] <-
-                #   match(this_data[, this_censor_col],
-                #         c(survival_specs[this_row, "censor_code"],
-                #           survival_specs[this_row, "event_code"])) - 1
-                # if(any(is.na(this_data[, this_censor_col])))
-                #   stop("non-matching values in ", this_censor_col,
-                #        "; all values should be either '",
-                #        survival_specs[this_row, "event_code"],
-                #        "' or '",
-                #        survival_specs[this_row, "censor_code"],
-                #        "'")
                 ## get set definitions, if there are any
                 ## (if not, will return a data frame with no rows)
                 set_definitions <- 
@@ -385,7 +366,9 @@ f_fit_survival_models <-
     ##  or somehow allow both ways (which might be better handled by
     ##  different functions entering in)
     if(!requireNamespace("flexsurv", quietly = TRUE))
-      stop("flexsurv packaged needed to fit survival models")
+      stop("flexsurv package needed to fit survival models")
+    if(!requireNamespace("survminer", quietly = TRUE))
+      stop("survminer package needed for survival models")
     stopifnot(is.data.frame(survdata))
     stopifnot(nrow(survdata) > 0)
     stopifnot(time_col_name %in% names(survdata))
@@ -435,8 +418,8 @@ f_fit_survival_models <-
           this_formula <- paste(formula_base_string, "1")
         this_formula <- stats::as.formula(this_formula)
         if(conditions[i, "dist"] == "km"){
-          this_fit <- survival::survfit(this_formula,
-                                        data = this_data) 
+          this_fit <- survminer::surv_fit(this_formula,
+                                          data = this_data) 
         }
         else{
           this_fit <- try(
