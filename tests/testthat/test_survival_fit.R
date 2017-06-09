@@ -277,9 +277,7 @@ test_that("fitting works (including with subsets)",
                                           survival_specs = ok_surv_info,
                                           dists = c("exp", "weibull"),
                                           save_fits = FALSE,
-                                          ## use_envir = new.env(),
                                           set_definitions = "set_def_pfs_os.csv")
-            ##expect_identical(unique(subset_fits_by_type[[1]][, 1:3]),
             expect_identical(unique(subset_fits_by_type[, 1:3]),
                              tibble::tribble(
                                ~type, ~treatment, ~set_name,
@@ -293,6 +291,14 @@ test_that("fitting works (including with subsets)",
                                "OS", "B", "B5"
                              )
             )
+            expect_error(
+              heemod:::survival_from_data(location = location,
+                                          survival_specs = ok_surv_info,
+                                          dists = c("exp", "weibull"),
+                                          save_fits = FALSE,
+                                          set_definitions = "set_def_pfs_os_error.csv"),
+              "1 '0' value"
+              )
           }
           )
 

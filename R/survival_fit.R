@@ -220,7 +220,7 @@ survival_from_data <-
                      piece1 <- piece2 <- ""
                      if(num_zeros > 0){
                         piece1 <- paste(num_zeros,
-                                        " 0 value",
+                                        " '0' value",
                                         plur(num_zeros),
                                         sep = "")
                      }
