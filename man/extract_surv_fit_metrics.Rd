@@ -2,7 +2,7 @@
 % Please edit documentation in R/survival_fit.R
 \name{extract_surv_fit_metrics}
 \alias{extract_surv_fit_metrics}
-\title{Title}
+\title{Add fit metrics to a fit tibble}
 \usage{
 extract_surv_fit_metrics(fit_tib, metric = c("AIC", "BIC", "m2LL"))
 }
@@ -16,5 +16,5 @@ extract_surv_fit_metrics(fit_tib, metric = c("AIC", "BIC", "m2LL"))
 a tibble with the added columns
 }
 \description{
-Title
+Add fit metrics to a fit tibble
 }

@@ -197,55 +197,14 @@ survival_from_data <-
                      filter_(.dots = strsplit(these_sets[set_index, 
                                                          "condition"],
                                               ",")[[1]])
-                   ## if requested, subtract off the appropriate time
-                   ## (this is for fitting subsets that are defined by
-                   ##    being after a certain time, and we want to
-                   ##    fit as if the cutoff time is the new base time)
-                   to_subtract <- these_sets[set_index, "time_subtract"]
-                   if(length(to_subtract) > 0 && !is.na(to_subtract)){
-                     this_time_col <- survival_specs[this_row, "time_col"]
-                     subset_data[, this_time_col] <- 
-                       subset_data[, this_time_col] - to_subtract
-                   }
-                   ## doesn't make sense to have times = 0 (much less negative);
-                   ##   most parametric fits will fail
                    
-                   negatives <- subset_data[, this_time_col] < 0
-                   zeros <- subset_data[, this_time_col] == 0
-                   
-                   
-                   if(any(negatives | zeros)){
-                     num_zeros <- sum(zeros)
-                     num_negatives <- sum(negatives)
-                     piece1 <- piece2 <- ""
-                     if(num_zeros > 0){
-                        piece1 <- paste(num_zeros,
-                                        " '0' value",
-                                        plur(num_zeros),
-                                        sep = "")
-                     }
-                     if(num_negatives > 0){
-                        piece2 <- paste(num_negatives,
-                                        " negative value",
-                                        plur(num_negatives),
-                                        sep = "")
-                     }
-                     if(nchar(piece1) & nchar(piece2))
-                       message <- paste(piece1, piece2, sep = " and ")
-                     else
-                       message <- ifelse(nchar(piece1), piece1, piece2)
-                     message <- paste(message,
-                                      " in the subset ",
-                                      these_sets[set_index, "set_name"],
-                                      "'", 
-                                      sep = "")
-                      if(grepl(">=", these_sets[set_index, "condition"]))
-                       message <- paste(message, "\n",
-                                        "perhaps you need '>' in your condition rather than '>='?"
-                       )
-                     
-                     stop(message)
-                   }
+                   subset_data <- 
+                     subtract_times(subset_data, 
+                                    to_subtract = these_sets[[set_index, "time_subtract"]],
+                                    this_time_col = survival_specs[this_row, "time_col"],
+                                    set_name = these_sets[[set_index, "set_name"]],
+                                    condition = these_sets[[set_index, "condition"]]
+                                    )
                    
                    these_surv_fits <- 
                      f_fit_survival_models(subset_data, 
@@ -619,7 +578,7 @@ add_m2LL <- function(surv_fits)
   out
 }
 
-#' Title
+#' Add fit metrics to a fit tibble
 #'
 #' @param fit_tib a tibble of fits, for example from
 #'   [survival_fits_from_tabular()]
@@ -683,4 +642,74 @@ fix_censor_col <- function(this_data, this_censor_col,
       "' (for censoring)"
     )
   this_data
+}
+
+
+#' Subtract time
+#'
+#' @param subset_data some data
+#' @param to_subtract the number to subtract from times
+#' @param this_time_col the name of the time column
+#' @param set_name in case needed for error message
+#' @param condition in case needed for error message
+#' @details This is for fitting subsets that are defined by
+#'    being after a certain time, and we want to
+#'   fit as if the cutoff time is the new base time.
+#'
+#' Moved into a separate function to get the error check
+#'   and lengthy construction of an error messageout of the main flow.
+#' @return the data, with `to_subtract`` subtracted from the time column
+#'
+subtract_times <- function(subset_data, to_subtract, this_time_col,
+                           set_name, condition) {
+  ## subtract off the appropriate time, if there is one
+  if (length(to_subtract) > 0 && !is.na(to_subtract)) {
+    subset_data[, this_time_col] <-
+      subset_data[, this_time_col] - to_subtract
+  }
+  ## error check:
+  ##   doesn't make sense to have times = 0 or negative;
+  ##   most parametric fits will fail
+  
+  negatives <- subset_data[, this_time_col] < 0
+  zeros <- subset_data[, this_time_col] == 0
+  
+  
+  if (any(negatives | zeros)) {
+    num_zeros <- sum(zeros)
+    num_negatives <- sum(negatives)
+    piece1 <- piece2 <- ""
+    if (num_zeros > 0) {
+      piece1 <- paste(num_zeros,
+                      " '0' value",
+                      plur(num_zeros),
+                      sep = "")
+    }
+    if (num_negatives > 0) {
+      piece2 <- paste(num_negatives,
+                      " negative value",
+                      plur(num_negatives),
+                      sep = "")
+    }
+    if (nchar(piece1) & nchar(piece2))
+      message <- paste(piece1, piece2, sep = " and ")
+    else
+      message <- ifelse(nchar(piece1), piece1, piece2)
+    message <- paste(message,
+                     " in the subset ",
+                     # these_sets[set_index, "set_name"],
+                     set_name,
+                     "'",
+                     "with condition '",
+                     condition,
+                     "'",
+                     sep = "")
+    if (grepl(">=", condition)) #these_sets[set_index, "condition"]))
+      message <- paste(message,
+                       "\n",
+                       "perhaps you need '>' in your condition rather than '>='?")
+    
+    stop(message)
+  }
+  subset_data
 }
