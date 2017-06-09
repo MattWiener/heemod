@@ -103,6 +103,10 @@ test_that("reading set definitions works",
                          "bad offset in set_definitions",
                          fixed = TRUE
             )
+            expect_warning(get_set_definitions(system.file("tabular/surv", package = "heemod"),
+                                               "set_definitions_error_3.csv"),
+                           "value of 'time_subtract' does not appear in 'condition'",
+                           fixed = TRUE)
             expect_error(get_set_definitions(system.file("tabular/surv", package = "heemod"),
                                              "set_definitions_3.csv"),
                          "multiple definitions of some sets"
@@ -165,8 +169,7 @@ test_that("fitting works (including with subsets)",
               heemod:::survival_from_data(location = location,
                                           survival_specs = not_ok_surv_info,
                                           dists = c("exp", "weibull"),
-                                          save_fits = FALSE), #,
-                                          # use_envir = new.env()),
+                                          save_fits = FALSE), 
               "censoring status column 'status2' does not exist in data file"
               
             )
@@ -174,17 +177,13 @@ test_that("fitting works (including with subsets)",
               heemod:::survival_from_data(location = location,
                                  survival_specs = ok_surv_info,
                                  dists = c("exp", "weibull"),
-                                 save_fits = FALSE) #,
-                                 #use_envir = new.env())
-            expect_identical(names(these_fits), ##c("", "env"))
-            ##expect_identical(names(these_fits[[1]]),
+                                 save_fits = FALSE) 
+            expect_identical(names(these_fits), 
                              c("type", "treatment", "set_name",
                                "dist", "fit", "set_def",
                                "time_subtract"))
-            ##expect_identical(these_fits[[1]]$dist,
             expect_identical(these_fits$dist,
                              rep(c("exp", "weibull", "km"), 10))
-            ##expect_identical(sapply(these_fits[[1]]$fit, class),
             expect_identical(sapply(these_fits$fit, class),
                              c(rep(c("flexsurvreg", "flexsurvreg", "survfit",
                                    "surv_shift", "surv_shift", "surv_shift"), 
@@ -193,7 +192,6 @@ test_that("fitting works (including with subsets)",
                                "flexsurvreg", "flexsurvreg", "survfit",
                                "surv_shift", "surv_shift", "surv_shift",
                                "flexsurvreg", "flexsurvreg", "survfit")))
-            ## combos <- table(these_fits[[1]][, c("treatment", "set_def")])
             combos <- table(these_fits[, c("treatment", "set_def")])
             ## sorting to make sure things are in right order for tests -
             ##   otherwise sometimes had problems with different locales
@@ -204,7 +202,6 @@ test_that("fitting works (including with subsets)",
                                   set_def = c("biomarker > 0.5","time > 50", "TRUE")))
             expect_identical(as.numeric(combos),
                              c(0, 6, 6, 6, 6, 6))
-            ## metrics <- extract_surv_fit_metrics(these_fits[[1]])
             metrics <- extract_surv_fit_metrics(these_fits)
             expect_identical(names(metrics),
                              c("type", "treatment", "set_name", "dist", "fit",

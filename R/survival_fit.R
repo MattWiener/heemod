@@ -207,8 +207,48 @@ survival_from_data <-
                      subset_data[, this_time_col] <- 
                        subset_data[, this_time_col] - to_subtract
                    }
+                   ## doesn't make sense to have times = 0 (much less negative);
+                   ##   most parametric fits will fail
+                   
+                   negatives <- subset_data[, this_time_col] < 0
+                   zeros <- subset_data[, this_time_col] == 0
+                   
+                   
+                   if(any(negatives | zeros)){
+                     num_zeros <- sum(zeros)
+                     num_negatives <- sum(negatives)
+                     piece1 <- piece2 <- ""
+                     if(num_zeros > 0){
+                        piece1 <- paste(num_zeros,
+                                        " 0 value",
+                                        plur(num_zeros),
+                                        sep = "")
+                     }
+                     if(num_negatives > 0){
+                        piece2 <- paste(num_negatives,
+                                        " negative value",
+                                        plur(num_negatives),
+                                        sep = "")
+                     }
+                     if(nchar(piece1) & nchar(piece2))
+                       message <- paste(piece1, piece2, sep = " and ")
+                     else
+                       message <- ifelse(nchar(piece1), piece1, piece2)
+                     message <- paste(message,
+                                      " in the subset ",
+                                      these_sets[set_index, "set_name"],
+                                      "'", 
+                                      sep = "")
+                      if(grepl(">=", these_sets[set_index, "condition"]))
+                       message <- paste(message, "\n",
+                                        "perhaps you need '>' in your condition rather than '>='?"
+                       )
+                     
+                     stop(message)
+                   }
+                   
                    these_surv_fits <- 
-                     f_fit_survival_models(subset_data, #this_data,
+                     f_fit_survival_models(subset_data, 
                                            dists = dists,
                                            time_col_name = survival_specs[this_row, "time_col"], 
                                            censor_col_name = survival_specs[this_row, "censor_col"], 
@@ -286,6 +326,55 @@ get_set_definitions <- function(data_dir, file_name = "set_definitions"){
   ## just in case we have only logicals
   set_definitions$condition <- as.character(set_definitions$condition)
 
+  if(!("time_subtract" %in% names(set_definitions))){
+    set_definitions <- dplyr::mutate_(set_definitions, time_subtract = 0)
+  }
+  else{
+    neg_offset <- which(set_definitions$time_subtract < 0)
+    if(length(neg_offset))
+      stop("bad offset in set_definitions line(s) ",
+           paste(neg_offset, collapse = ", ")
+      )
+    
+   ## check whether time_subtracts match numbers in conditions,
+    ##  warning if not
+    time_matches_condition <- 
+      sapply(1:nrow(set_definitions), 
+             function(i){
+               if(is.na(set_definitions$time_subtract[i]))
+                 TRUE
+               else
+                grepl(set_definitions$time_subtract[i], 
+                      set_definitions$condition[i]
+                      )
+      }
+    )
+    problem_conditions <- which(!time_matches_condition)
+    if(length(problem_conditions)){
+      bad_conds <- 
+        sapply(problem_conditions, function(this_row){
+                   paste(this_row, 
+                         set_definitions$condition[this_row],
+                         set_definitions$time_subtract[this_row],
+                         sep = "\t"
+                        )
+      }
+      )
+      message <- 
+        paste("\n",
+              bad_conds,
+              "\n",
+              "value of 'time_subtract' does not appear in 'condition' for row",
+              plur(length(problem_conditions)),
+              " ", 
+              paste(problem_conditions, collapse = ", "),
+              " in set_definitions",
+              "\n",
+              sep = ""
+              )
+      warning(message)
+      }
+  }
   if("type" %in% names(set_definitions))
     set_definitions$type <- toupper(set_definitions$type)
   else{
@@ -302,17 +391,11 @@ get_set_definitions <- function(data_dir, file_name = "set_definitions"){
     stop("it appears you have multiple definitions of some sets: ",
          set_definitions[dups, c("treatment", "type", "set_name", "condition")])
   }
-  if(!("time_subtract" %in% names(set_definitions)))
-    set_definitions <- dplyr::mutate_(set_definitions, time_subtract = 0)
+  
   set_definitions <- 
     set_definitions %>% 
     dplyr::mutate_(time_subtract = ~ifelse(is.na(time_subtract), 
                                            0, time_subtract))
-  neg_offset <- which(set_definitions$time_subtract < 0)
-  if(length(neg_offset))
-    stop("bad offset in set_definitions line(s) ",
-         paste(neg_offset, collapse = ", ")
-    )
   set_definitions
 }
 
