@@ -429,15 +429,16 @@ get_component <- function(obj, comp){
 }
 
 extract_fits <- function(x) {
-  if (inherits(x, "flexsurvreg"))
+  if (inherits(x, c("flexsurvreg", "survfit")))
     x
   else{
-    if ("dist" %in% names(x) && inherits(x$dist, "flexsurvreg"))
+    if ("dist" %in% names(x) && 
+        inherits(x$dist, c("flexsurvreg", "survfit")))
       x$dist
     else
       stop(
-        "unrecognized input; not a flexsurvreg object and ",
-        "doesn't contain a flexsurvreg object as 'dist'"
+        "unrecognized input; not a flexsurvreg or survfit object and ",
+        "doesn't contain a flexsurvreg or survfit object as 'dist'"
       )
   }
 }
@@ -566,7 +567,8 @@ plot_cloglog_fit_tibble <-
     
     if(!is.null(treatments))
       partial1 <- partial1 %>% 
-                    dplyr::filter_( lazyeval::interp(~treatment %in% var, var = treatments))
+                    dplyr::filter_( lazyeval::interp(~treatment %in% var, 
+                                                     var = treatments))
     
      km_cloglog_plot_data <- 
        prepare_plot_data_from_fit_tibble(partial1)  %>%
@@ -585,7 +587,13 @@ plot_cloglog_fit_tibble <-
       ggplot2::geom_line(size = 1.25)
     use_title <- paste(type, " for subset '", set_name, "'", sep = "")
     res_cloglog <- res_cloglog + ggplot2::ggtitle(use_title)
-    res_cloglog
+   res_km <-
+      survminer::ggsurvplot_combine(lapply(partial1$fit, extract_fits), legend.title = "",
+                                    legend.labs = partial1$treatment,
+                                    conf.int = TRUE) + 
+        ggplot2::labs(title = use_title, x = "time")
+    res_km$plot$theme <- res_cloglog$theme
+    list(cloglog = res_cloglog, km = res_km)
       
   }
 
