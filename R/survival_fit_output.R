@@ -614,7 +614,8 @@ plot_cloglog_fit_tibble <-
       survminer::ggcoxdiagnostics(cox_fit,
                                   type = "schoenfeld",
                                   ox.scale = "time",
-                                  hline.col = "black")
+                                  hline.col = "black",
+                                  hline.size = 0.5)
     
     list(cloglog = res_cloglog, km = res_km, 
          cox_fit = cox_fit, cox_resid = cox_schoenfeld_resid_plot)
