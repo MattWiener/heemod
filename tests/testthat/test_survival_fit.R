@@ -137,7 +137,7 @@ test_that("getting survival inputs works",
                         "extra_col")
            surv_info_extra_row <- ok_surv_info[c(1, 1:nrow(ok_surv_info)),]
            expect_error(check_survival_specs(surv_info_extra_row),
-                        "exactly one PFS and one OS entry")
+                     "exactly one PFS and one OS entry")
            surv_info_dup <- ok_surv_info
            surv_info_dup[1, c("fit_directory", "fit_file", "time_col", "censor_col")] <- 
              surv_info_dup[2, c("fit_directory", "fit_file", "time_col", "censor_col")]
@@ -146,7 +146,9 @@ test_that("getting survival inputs works",
            surv_info_wrong_type <- ok_surv_info
            surv_info_wrong_type[1, "type"] <- "oops"
            expect_error(check_survival_specs(surv_info_wrong_type),
-                        "exactly one PFS and one OS entry")
+                        "only types 'PFS', 'OS', and 'ToT' are allowed; unknown type: oops",
+                        fixed = TRUE
+           )
            surv_info_na <- ok_surv_info
            surv_info_na[1, "time_col"] <- NA
            expect_error(check_survival_specs(surv_info_na),
