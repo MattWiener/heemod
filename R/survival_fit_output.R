@@ -593,7 +593,31 @@ plot_cloglog_fit_tibble <-
                                     conf.int = TRUE) + 
         ggplot2::labs(title = use_title, x = "time")
     res_km$plot$theme <- res_cloglog$theme
-    list(cloglog = res_cloglog, km = res_km)
+    
+    ## we're also going to get the Cox proportional hazards
+    ##  information.   This is a little bit of a hack, but
+    ##  lets us put together the information we need out of
+    ##  what we already have. 
+    
+    data_for_cox <- 
+      dplyr::bind_rows(lapply(partial1$fit, 
+                              function(x){y <- extract_data(x)
+                                          names(y) <- c("time", "status", "treatment")
+                                          y
+                                          }
+                              )
+                       )
+    cox_fit <- 
+      survival::coxph(survival::Surv(time, status) ~ treatment,
+                    data = data_for_cox)
+    cox_schoenfeld_resid_plot <-
+      survminer::ggcoxdiagnostics(cox_fit,
+                                  type = "schoenfeld",
+                                  ox.scale = "time",
+                                  hline.col = "black")
+    
+    list(cloglog = res_cloglog, km = res_km, 
+         cox_fit = cox_fit, cox_resid = cox_schoenfeld_resid_plot)
       
   }
 
@@ -640,5 +664,21 @@ check_plot_tibble_input <-
            "Available set_names: ",
            paste(unique(fit_tibble$set_name), collapse = ", ")
       )
+    }
+  }
+
+extract_data <- 
+  function(x) {
+    if (inherits(x, "survfit"))
+      x$call$data
+    else{
+      if ("dist" %in% names(x) && 
+          inherits(x$dist,  "survfit"))
+        x$dist$call$data
+      else
+        stop(
+          "unrecognized input; not survfit object and ",
+          "doesn't contain a urvfit object as 'dist'"
+        )
     }
   }
