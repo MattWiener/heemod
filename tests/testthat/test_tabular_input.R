@@ -202,11 +202,12 @@ test_that(
       stringsAsFactors = FALSE
     )
     expect_error(create_states_from_tabular(na_state_spec),
-                 "value cost has missing values in the state file")
+                 "value cost for strategy 'A' has missing values in the state file")
     
     na_state_spec$qaly[1] <- NA
     expect_error(create_states_from_tabular(na_state_spec),
-                 "values cost, qaly for have missing values in the state file")
+                 "values cost, qaly for strategy 'A' have missing values",
+                 fixed = TRUE)
     
     dup_state <- structure(list(
       .model = c("standard", "standard", "standard", 

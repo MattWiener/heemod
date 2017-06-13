@@ -6,7 +6,9 @@
 \usage{
 survival_from_data(location, survival_specs, dists = dists,
   save_fits = TRUE, just_load = FALSE,
-  set_definitions = "set_definitions.csv")
+  set_definitions = "set_definitions.csv",
+  report_file_name = "survival_report", write_report = FALSE,
+  write_excel = write_report)
 }
 \arguments{
 \item{location}{base directory for the analysis.}
@@ -22,6 +24,14 @@ on how to perform each fit - see @details.}
 from \code{fit_files}}
 
 \item{set_definitions}{definitions of different subsets to fit}
+
+\item{report_file_name}{base name for survival output - Excel and the
+diagnostic tables and plots on the fits.}
+
+\item{write_report}{should the call produce an html report with
+diagnostic tables and plots on the fits?}
+
+\item{write_excel}{should the call produce a csv file summarizing fits?}
 }
 \value{
 a tibble with columns \code{type}, \code{treatment}, \code{set_name},
@@ -32,9 +42,11 @@ Title Get survival analysis curves from data
 }
 \details{
 By default, the function fits with seven
-different distribution fucntions:
+different distribution functions:
 exponential,  Weibull,  lognormal, log-logistic,
 Gompertz, gamma, and generalized gamma.
+
+\code{write_report} and \code{write_excel} are ignored if \code{just_load = TRUE}.
 
 survival_specs contains information about how to create the fits:
 the directory (or directories) in which

@@ -37,7 +37,8 @@ survival_fits_from_tabular <- function(base_dir, ref_file, ...) {
 #' @rdname survival_fits_from_tabular
 #' @export
 survival_fits_from_ref_struc <- function(ref, 
-                                         save_fits = FALSE, just_load = FALSE){  
+                                         save_fits = FALSE, just_load = FALSE, 
+                                         ...){  
   surv_ref_full_file <- ref[ref$data == "tm", "full_file"]
   surv_ref_file <- ref[ref$data == "tm", "file"]
   ## slightly roundabout way of getting the base location back
@@ -52,7 +53,8 @@ survival_fits_from_ref_struc <- function(ref,
                      survival_specs,
                      dists = allowed_fit_distributions, 
                      save_fits = save_fits,
-                     just_load = just_load)
+                     just_load = just_load,
+                     ...)
   
   
 }
@@ -91,13 +93,20 @@ partitioned_survival_from_ref_struc <- function(ref,
 #' @param save_fits should fits be saved to disk?  Can be useful for testing.
 #' @param just_load If TRUE, data files are ignored in favor of loading fits
 #'    from `fit_files`
+#' @param report_file_name base name for survival output - Excel and the
+#'    diagnostic tables and plots on the fits.
 #' @param set_definitions definitions of different subsets to fit
+#' @param write_report should the call produce an html report with
+#'    diagnostic tables and plots on the fits?
+#' @param write_excel should the call produce a csv file summarizing fits?
 #' @return a tibble with columns `type`, `treatment`, `set_name`,
 #'    `dist`, `fit`, `set_def`, and `time_subtract`
 #' @details By default, the function fits with seven 
-#'   different distribution fucntions:
+#'   different distribution functions:
 #'   exponential,  Weibull,  lognormal, log-logistic, 
 #'   Gompertz, gamma, and generalized gamma.
+#'   
+#'   `write_report` and `write_excel` are ignored if `just_load = TRUE`.
 #' 
 #' survival_specs contains information about how to create the fits:
 #'   the directory (or directories) in which
@@ -114,29 +123,32 @@ partitioned_survival_from_ref_struc <- function(ref,
 #' (`.Platform$file.sep`) or with a letter and a colon (to accomodate Windows),
 #' it's considered absolute and not appended to `location`.
 
-survival_from_data <- 
+survival_from_data <-
   function(location,
            survival_specs,
            dists = dists,
            save_fits = TRUE,
            just_load = FALSE,
-           set_definitions = "set_definitions.csv"){
-    
+           set_definitions = "set_definitions.csv",
+           report_file_name = "survival_report",
+           write_report = FALSE,
+           write_excel = write_report) {
     survival_specs <- check_survival_specs(survival_specs)
     
-    if(just_load){
+    if (just_load) {
       return(load_surv_models(location, survival_specs))
-   }
+    }
     else{
       ## going to check whether we have an absolute directory
-      ##   for data directory, or relative.  
-      is_absolute <- 
+      ##   for data directory, or relative.
+      loadNamespace("flexsurv")
+      is_absolute <-
         grepl("^[A-Z]:", survival_specs$data_directory) |
         grepl("^(/|\\\\)", survival_specs$data_directory)
       data_files <- file.path(location,
                               survival_specs$data_directory,
                               survival_specs$data_file)
-      data_files[is_absolute] <- 
+      data_files[is_absolute] <-
         file.path(survival_specs$data_directory,
                   survival_specs$data_file)[is_absolute]
       fit_files <- file.path(location,
@@ -144,117 +156,151 @@ survival_from_data <-
                              survival_specs$fit_file)
       
       
-     surv_models <- 
-       lapply(seq(1:nrow(survival_specs)),
-             function(this_row){
-                this_treatment <- 
-                  survival_specs[this_row, "treatment"]
-                treatment_col_name <- survival_specs[this_row, "treatment_col"]
-                this_time_col <- survival_specs[this_row, "time_col"]
-                filter_str <- 
-                  paste(treatment_col_name, " == '", this_treatment, "'", sep = "")
-                this_data <- 
-                 read_file(data_files[this_row]) %>%
-                  dplyr::filter_(filter_str)
-                
-                ## set up the event values: 1 for event, 0 for censored
-                this_data <- 
-                  fix_censor_col(this_data, 
-                                 survival_specs[this_row, "censor_col"],
-                                 survival_specs[this_row, "censor_code"],
-                                 survival_specs[this_row, "event_code"],
-                                 data_files[this_row])
-                
-                ## get set definitions, if there are any
-                ## (if not, will return a data frame with no rows)
-                set_definitions <- 
-                  get_set_definitions(file.path(location, 
-                                                survival_specs$fit_directory[this_row]),
-                                      file_name = set_definitions)
-                
-                class(this_data) <- c("survdata", class(this_data))
-               
-                ## get the set definitions associated with this treatment
-                these_sets <- 
-                 dplyr::filter_(set_definitions, 
-                                ~ treatment == this_treatment)
-                ## if relevant, restrict to the set definitions associated
-                ##   with this type (pfs or os)
-                if("type" %in% names(these_sets)){
-                  these_sets <- 
-                   dplyr::filter_(these_sets,
-                                  ~ type == survival_specs[this_row, "type"])
-                }
-               if(nrow(these_sets) == 0) 
-                 these_sets <- data.frame(set_name = "all",
-                                          condition = "TRUE",
-                                          time_subtract = 0,
-                                          stringsAsFactors = FALSE)
-               surv_fits <- 
-                 lapply(1:nrow(these_sets), function(set_index){
-                   subset_data <-
-                     this_data %>% 
-                     filter_(.dots = strsplit(these_sets[set_index, 
-                                                         "condition"],
-                                              ",")[[1]])
-                   
-                   subset_data <- 
-                     subtract_times(subset_data, 
-                                    to_subtract = these_sets[[set_index, "time_subtract"]],
-                                    this_time_col = survival_specs[this_row, "time_col"],
-                                    set_name = these_sets[[set_index, "set_name"]],
-                                    condition = these_sets[[set_index, "condition"]]
-                                    )
-                   
-                   these_surv_fits <- 
-                     f_fit_survival_models(subset_data, 
-                                           dists = dists,
-                                           time_col_name = survival_specs[this_row, "time_col"], 
-                                           censor_col_name = survival_specs[this_row, "censor_col"], 
-                                           treatment_col_name = survival_specs[this_row, "treatment_col"],
-                                           covariate_col_names = NULL, 
-                                           fit_indiv_groups = TRUE)
-                   ## attr(these_surv_fits, "set_definition") <- these_sets[[set_index, "condition"]]
-                   these_surv_fits$set_name <- these_sets[[set_index, "set_name"]]
-                   these_surv_fits$set_def <- these_sets[[set_index, "condition"]]
-                   these_surv_fits$time_subtract <- these_sets[[set_index, "time_subtract"]]
-                   
-                   ## modify the fits to take into account
-                   ##   the time subtraction
-                   new_fits <- 
-                     these_surv_fits %>%
-                        dplyr::rowwise() %>%
-                          dplyr::do_(fit = ~apply_shift(dist = .$fit, 
-                                                        shift = .$time_subtract)) %>%
-                            dplyr::ungroup()
-                          
-                   
-                   these_surv_fits$fit <- new_fits$fit
-  
-                   these_surv_fits
-                 }
-                 )
-               names(surv_fits) <- these_sets$set_name
-               surv_fits_tib <- do.call("rbind", surv_fits)
-               surv_fits_tib$type <- survival_specs[this_row, "type"]
-               surv_fits_tib <- 
-                 surv_fits_tib[, c("type", "treatment", "set_name", "dist",
-                                   "fit", "set_def", "time_subtract"),
-                               drop = FALSE]
-               assign(survival_specs[this_row, "fit_name"],
-                      surv_fits_tib)
-               if(save_fits){
-                 save(list = survival_specs[this_row, "fit_name"],
-                      file = paste(fit_files[this_row], ".RData", sep = ""))
-               }
+      surv_models <-
+        lapply(seq(1:nrow(survival_specs)),
+               function(this_row) {
+                 this_treatment <-
+                   survival_specs[this_row, "treatment"]
+                 treatment_col_name <-
+                   survival_specs[this_row, "treatment_col"]
+                 this_time_col <-
+                   survival_specs[this_row, "time_col"]
+                 filter_str <-
+                   paste(treatment_col_name, " == '", this_treatment, "'", sep = "")
+                 this_data <-
+                   read_file(data_files[this_row]) %>%
+                   dplyr::filter_(filter_str)
                  
-               surv_fits_tib
-             }
-      )
+                 ## set up the event values: 1 for event, 0 for censored
+                 this_data <-
+                   fix_censor_col(this_data,
+                                  survival_specs[this_row, "censor_col"],
+                                  survival_specs[this_row, "censor_code"],
+                                  survival_specs[this_row, "event_code"],
+                                  data_files[this_row])
+                 
+                 ## get set definitions, if there are any
+                 ## (if not, will return a data frame with no rows)
+                 set_definitions <-
+                   get_set_definitions(file.path(location,
+                                                 survival_specs$fit_directory[this_row]),
+                                       file_name = set_definitions)
+                 
+                 class(this_data) <- c("survdata", class(this_data))
+                 
+                 ## get the set definitions associated with this treatment
+                 these_sets <-
+                   dplyr::filter_(set_definitions,
+                                  ~ treatment == this_treatment)
+                 ## if relevant, restrict to the set definitions associated
+                 ##   with this type (pfs or os)
+                 if ("type" %in% names(these_sets)) {
+                   these_sets <-
+                     dplyr::filter_(these_sets,
+                                    ~ type == survival_specs[this_row, "type"])
+                 }
+                 if (nrow(these_sets) == 0)
+                   these_sets <- data.frame(
+                     set_name = "all",
+                     condition = "TRUE",
+                     time_subtract = 0,
+                     stringsAsFactors = FALSE
+                   )
+                 surv_fits <-
+                   lapply(1:nrow(these_sets), function(set_index) {
+                     subset_data <-
+                       this_data %>%
+                       filter_(.dots = strsplit(these_sets[set_index,
+                                                           "condition"],
+                                                ",")[[1]])
+                     
+                     subset_data <-
+                       subtract_times(
+                         subset_data,
+                         to_subtract = these_sets[[set_index, "time_subtract"]],
+                         this_time_col = survival_specs[this_row, "time_col"],
+                         set_name = these_sets[[set_index, "set_name"]],
+                         condition = these_sets[[set_index, "condition"]]
+                       )
+                     
+                     these_surv_fits <-
+                       f_fit_survival_models(
+                         subset_data,
+                         dists = dists,
+                         time_col_name = survival_specs[this_row, "time_col"],
+                         censor_col_name = survival_specs[this_row, "censor_col"],
+                         treatment_col_name = survival_specs[this_row, "treatment_col"],
+                         covariate_col_names = NULL,
+                         fit_indiv_groups = TRUE
+                       )
+                     ## attr(these_surv_fits, "set_definition") <- these_sets[[set_index, "condition"]]
+                     these_surv_fits$set_name <-
+                       these_sets[[set_index, "set_name"]]
+                     these_surv_fits$set_def <-
+                       these_sets[[set_index, "condition"]]
+                     these_surv_fits$time_subtract <-
+                       these_sets[[set_index, "time_subtract"]]
+                     
+                     ## modify the fits to take into account
+                     ##   the time subtraction
+                     new_fits <-
+                       these_surv_fits %>%
+                       dplyr::rowwise() %>%
+                       dplyr::do_(fit = ~ apply_shift(dist = .$fit,
+                                                      shift = .$time_subtract)) %>%
+                       dplyr::ungroup()
+                     
+                     
+                     these_surv_fits$fit <- new_fits$fit
+                     
+                     these_surv_fits
+                   })
+                 names(surv_fits) <- these_sets$set_name
+                 surv_fits_tib <- do.call("rbind", surv_fits)
+                 surv_fits_tib$type <-
+                   survival_specs[this_row, "type"]
+                 surv_fits_tib <-
+                   surv_fits_tib[, c("type",
+                                     "treatment",
+                                     "set_name",
+                                     "dist",
+                                     "fit",
+                                     "set_def",
+                                     "time_subtract"),
+                                 drop = FALSE]
+                 assign(survival_specs[this_row, "fit_name"],
+                        surv_fits_tib)
+                 if (save_fits) {
+                   save(list = survival_specs[this_row, "fit_name"],
+                        file = paste(fit_files[this_row], ".RData", sep = ""))
+                 }
+                 
+                 surv_fits_tib
+               })
+      
+      names(surv_models) <- survival_specs$fit_name
+      surv_models <- do.call("rbind", surv_models)
+      if (write_excel) {
+        write_fits_to_excel_from_tibble(
+          fit_tibble = surv_models,
+          wb = file.path(location,
+                         paste(report_file_name, ".xlsx", sep = "")),
+          alignment = "horizontal"
+        )
+      }
+      if (write_report) {
+        rmarkdown::render(
+          "../survival_fit_report_template.Rmd",
+          params = list(fit_tibble = surv_models,
+                        extra_args = NULL),
+          output_file = file.path(location,
+                                  paste(report_file_name, ".html",
+                                        sep = ""))
+        )
+      }
+      
     }
-
-    names(surv_models) <- survival_specs$fit_name
-    do.call("rbind", surv_models)
+    return(surv_models)
   }
 
 

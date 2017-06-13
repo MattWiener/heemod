@@ -9,7 +9,7 @@
 \usage{
 survival_fits_from_tabular(base_dir, ref_file, ...)
 
-survival_fits_from_ref_struc(ref, save_fits = FALSE, just_load = FALSE)
+survival_fits_from_ref_struc(ref, save_fits = FALSE, just_load = FALSE, ...)
 
 partitioned_survival_from_tabular(base_dir, ref_file, state_names,
   save_fits = FALSE, just_load = FALSE)

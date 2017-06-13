@@ -89,11 +89,14 @@ write_fits_to_excel_from_tibble <-
           tidyr::nest()
     
     
-    
+    flexspace <- loadNamespace("flexsurv")
     ## need to know how many rows of output we're going to write
     num_rows <- sum(sapply(fit_tibble_nest[[1, "data"]]$dist, 
                              function(x){
-                               length(formals(get(paste("r", x, sep = "")))) - 1}
+                               length(formals(get(paste("r", x, 
+                                                        sep = ""),
+                                                  envir = flexspace)))
+                               }
                              )
                       )
     if(alignment == "vertical"){
