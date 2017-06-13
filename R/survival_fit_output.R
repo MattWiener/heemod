@@ -561,6 +561,7 @@ plot_cloglog_fit_tibble <-
     ## pull out just Kaplan-Meier fits,
     ##   with only the type we want (PFS or OS),
     ##   and with whatever treatments we want
+    loadNamespace("survminer")
     partial1 <- 
       dplyr::filter_(fit_tibble,
                      ~ dist == "km",
