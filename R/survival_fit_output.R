@@ -123,8 +123,8 @@ write_fits_to_excel_from_tibble <-
       fit_tibble %>% 
       dplyr::filter_(~ dist == "km") %>%
       dplyr::group_by_(~ type, ~ treatment, ~ set_name) %>%
-      dplyr::do(data.frame(summary(object = .$fit[[1]], 
-                                   summary_type = "standard")[use_pieces])) %>%
+      dplyr::do_('data.frame(summary(object = .$fit[[1]], 
+                                   summary_type = "standard")[use_pieces])') %>%
       dplyr::ungroup()
     
     
@@ -249,14 +249,15 @@ prepare_plot_data_from_fit_tibble <-
     survival_summaries <- 
       fit_tib %>% 
         dplyr::group_by_(~ type, ~ treatment, ~ set_name, ~ dist) %>%
-          dplyr::do(summary_helper(., type = "survival", tidy = TRUE)) %>%
+          dplyr::do_('summary_helper(., type = "survival", 
+                     tidy = TRUE, B = B_ci)') %>%
             dplyr::ungroup()
     survival_summaries$fn <- "survival"
     cumhaz_summaries <- 
       fit_tib %>% 
       dplyr::group_by_(~ type, ~ treatment, ~ set_name, ~ dist) %>%
-      dplyr::do(summary_helper(., type = "cumhaz", 
-                               tidy = TRUE, B = B_ci)) %>%
+      dplyr::do_('summary_helper(., type = "cumhaz", 
+                               tidy = TRUE, B = B_ci)') %>%
       dplyr::ungroup()
     cumhaz_summaries$fn <- "cumulative hazard"
     rbind(survival_summaries, cumhaz_summaries)
