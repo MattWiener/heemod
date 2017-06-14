@@ -30,7 +30,7 @@
 #'   
 #' @export
 run_model_tabular <- function(location, reference = "REFERENCE.csv",
-                              run_dsa = TRUE,
+                              run_dsa = TRUE, 
                               run_psa = TRUE, run_demo = TRUE,
                               save = FALSE, overwrite = FALSE) {
   
@@ -175,7 +175,7 @@ gather_model_info <- function(base_dir, ref_file) {
 #' 
 #' @param inputs Result from 
 #'   [gather_model_info()].
-#' @param run_dsa Run DSA?   
+#' @param run_dsa Run DSA?
 #' @param run_psa Run PSA?
 #' @param run_demo Run demographic analysis?
 #'   
@@ -230,7 +230,7 @@ eval_models_from_tabular <- function(inputs,
   )
   
   model_dsa <- NULL
-  if (! is.null(inputs$param_info$dsa) & run_dsa) {
+  if (run_dsa & ! is.null(inputs$param_info$dsa)) {
     if (options()$heemod.verbose) message("** Running DSA...")
     model_dsa <- run_dsa(
       model_runs,
@@ -298,7 +298,8 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
     tm_info <- parse_multi_spec(
       tm_info,
       group_vars = c("from", "to"))
-    tab_undefined <- do.call("rbind", tm_info) %>% 
+    tab_undefined <- 
+      dplyr::bind_rows(tm_info) %>%
       dplyr::filter_(~ is.na(prob))
     
     if (nrow(tab_undefined) > 0) {
@@ -310,7 +311,6 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
     other_way <- setdiff(names(tm_info), names(state_info))
   }
   
-  
   if(trans_type == "part_surv"){
     use_fits_file <- ref[ref$data == "use_fits", "full_file"]
     use_fits <- read_file(use_fits_file)
@@ -320,19 +320,28 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
     other_way <- setdiff(unique(tm_info$.strategy), names(state_info))
   }
 
-  if (length(pb <- union(one_way, other_way))) {
-    stop(sprintf(
-      "Mismatching model names between TM file and state file: %s.",
-      paste(pb, collapse = ", ")
-    ))
-  }
-  
+  if (length(c(one_way, other_way))){
+    err_string <- "Mismatching model names between transition (TM) file and state file.\n"
+    if(length(one_way))
+      err_string <-
+        paste(err_string,
+              "In state file but not TM file:", 
+              paste(one_way, collapse = ", "),
+              "\n")
+    if(length(other_way))
+      err_string <-
+        paste(err_string,
+              "In TM but not state file:", 
+              paste(other_way, collapse = ", "),
+              "\n")
+    stop(err_string)
+    }
+
   if(trans_type == "part_surv")
     tm_info <- 
       dplyr::filter_(tm_info, ~ .strategy %in% names(state_info))
   else
     tm_info <- tm_info[names(state_info)]
-
   if (options()$heemod.verbose) message("*** Defining models...")
   models <- lapply(
     seq_along(state_info),
@@ -392,7 +401,7 @@ create_states_from_tabular <- function(state_info,
     stop("'state_info' must be a data frame.")
   }
   if(!(".state" %in% names(state_info))) {
-    stop("'.state' should be a column name.")
+    stop("'.state' should be a column name of the state file.")
   }
   if (any(duplicated(state_info$.state))) {
     stop(sprintf(
@@ -610,7 +619,7 @@ create_parameters_from_tabular <- function(param_defs,
     }
     
     if (all(is.na(param_defs$low))) {
-      stop("Non non-missing values in columns 'low' and 'high'.")
+      stop("No non-missing values in columns 'low' and 'high'.")
     }
     
     param_sens <- param_defs$parameter[! is.na(param_defs$low)]
@@ -708,7 +717,9 @@ create_options_from_tabular <- function(opt) {
   }
   
   if (any(duplicated(opt$option))) {
-    stop("Some option names are duplicated.")
+    stop("Some option names are duplicated: ",
+         paste(unique(opt$option[duplicated(opt$option)]),
+               collapse = ", "))
   }
   
   res <- list()
@@ -722,7 +733,7 @@ create_options_from_tabular <- function(opt) {
        substr(res$init, nchar(res$init), nchar(res$init)) == ")"){
       res$init <- substr(res$init, 3, nchar(res$init))
       res$init <- substr(res$init, 1, nchar(res$init) - 1)
-      warning("initial values should not be enclosed in c(); removing")
+      warning("initial values enclosed in c(); removing")
     }
     res$init <- as_numeric_safe(
       strsplit(res$init, ",")[[1]]
@@ -850,8 +861,8 @@ create_df_from_tabular <- function(df_dir, df_envir) {
   ## do the assignments
   for(i in seq(along = all_files)){
     this_val <- read_file(all_files[i])
-    
-    ## check for accidental commas in numbers
+      
+    ## check for accidential commas in numbers
     comma_cols <- 
       which(sapply(sapply(this_val, function(x){grep(",", x)}),
                    any)
@@ -871,6 +882,7 @@ create_df_from_tabular <- function(df_dir, df_envir) {
                 )
     }
     }
+
     assign(obj_names[i], this_val, envir = df_envir)
   }
   df_envir
@@ -957,8 +969,8 @@ parse_multi_spec <- function(multi_spec,
     dplyr::group_by_(.dots = group_vars) %>%
     dplyr::filter_(~ n() > 1)
   
-  multi_spec <- rbind(just_once, as.data.frame(more_than_once))
-  
+  multi_spec <- 
+    dplyr::bind_rows(just_once, as.data.frame(more_than_once))
   rownames(multi_spec) <- NULL
   list_spec <- split(multi_spec, multi_spec[, split_on])
   ## sort by order of appearance of split variables in multi_spec
@@ -1193,7 +1205,6 @@ save_outputs <- function(outputs, output_dir, overwrite) {
     this_file <- "dsa_diff"
     save_graph(this_plot, output_dir, this_file)
   }
-  
   if(!is.null(outputs$psa)){
     this_plot <- plot(outputs$psa)
     this_file <- paste("psa")
@@ -1311,7 +1322,7 @@ modify_param_defs_for_multinomials <- function(param_defs, psa) {
         (this_pos + 1):nrow(param_defs)
       }
     
-    param_defs <- rbind(
+    param_defs <- dplyr::bind_rows(
       param_defs[start_index,],
       replacements[[i]],
       param_defs[end_index,])

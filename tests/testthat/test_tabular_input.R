@@ -4,14 +4,14 @@ state_spec_file <- system.file(
   "tabular/test",
   "THR_test_states.csv",
   package = "heemod"
-) %>%
+) %>% 
   heemod:::read_file()
 
 state_spec <- data.frame(
   .state = c("PrimaryTHR", "SuccessfulPrimary",
              "RevisionTHR", "SuccessfulRevision",
              "Death"),
-  cost = c(0, 0, 5294, 0, 0),
+  cost = c(0,0,5294, 0, 0),
   qaly = c(0.0, 0.85, 0.30, 0.75, 0.00),
   .discount.qaly = c(0.01, NA, NA, NA, NA),
   stringsAsFactors = FALSE
@@ -21,6 +21,7 @@ test_that(
   "Normal state file input works.",
   {
     states1 <- heemod:::create_states_from_tabular(state_spec)
+    
     expect_output(
       print(states1),
       "A list of 5 states with 2 values each.
@@ -126,7 +127,8 @@ test_that(
         "tabular/test",
         "example_multinom_params_dup_name.csv",
         package = "heemod"
-      )))
+      ))),
+      "Some variables appear as individual parameters and in a multinomial"
     )
     
     
@@ -145,7 +147,8 @@ test_that(
     expect_error(
       heemod:::gather_model_info(
         system.file("tabular/test", package = "heemod"),
-        "bad_REFERENCE.csv")
+        "bad_REFERENCE.csv"),
+      "Duplicated values in reference file 'data' column: state."
     )
     expect_error(
       heemod:::gather_model_info(
@@ -187,7 +190,7 @@ test_that(
       heemod:::create_states_from_tabular(
         data.frame(x = 1:5, y = 1:5)
       ),
-      "'.state' should be a column name.",
+      "'.state' should be a column name of the state file.",
       fixed = TRUE
     )
     
@@ -202,13 +205,14 @@ test_that(
       stringsAsFactors = FALSE
     )
     expect_error(create_states_from_tabular(na_state_spec),
-                 "value cost for strategy 'A' has missing values in the state file")
-    
+                 "value cost for strategy 'A' has missing values",
+                 fixed = TRUE
+                 )
     na_state_spec$qaly[1] <- NA
     expect_error(create_states_from_tabular(na_state_spec),
                  "values cost, qaly for strategy 'A' have missing values",
-                 fixed = TRUE)
-    
+                 fixed = TRUE
+                 )
     dup_state <- structure(list(
       .model = c("standard", "standard", "standard", 
                  "standard", "standard"),
@@ -224,7 +228,9 @@ test_that(
       row.names = c(9L, 1L, 3L, 5L, 7L), class = "data.frame")
     
     expect_error(
-      heemod:::create_states_from_tabular(dup_state)
+      heemod:::create_states_from_tabular(dup_state),
+      "Duplicated state names: PrimaryTHR",
+      fixed = TRUE
     )
     
     pb_disc_state <- structure(list(
@@ -242,7 +248,9 @@ test_that(
       row.names = c(9L, 1L, 3L, 5L, 7L), class = "data.frame")
     
     expect_error(
-      heemod:::create_states_from_tabular(pb_disc_state)
+      heemod:::create_states_from_tabular(pb_disc_state),
+      "Discounting rates defined for non-existing values: .discount.qalyz",
+      fixed = TRUE
     )
     
     mult_disc_state <- structure(list(
@@ -260,7 +268,9 @@ test_that(
       row.names = c(9L, 1L, 3L, 5L, 7L), class = "data.frame")
     
     expect_error(
-      heemod:::create_states_from_tabular(mult_disc_state)
+      heemod:::create_states_from_tabular(mult_disc_state),
+      "Multiple discount values for '.discount.qaly'.",
+      fixed = TRUE
     )
   }
 )
@@ -292,7 +302,8 @@ test_that(
         bad_tm, 
         c("Death", "PrimaryTHR", "RevisionTHR", "SuccessfulPrimary", 
           "SuccessfulRevisionzzz")
-      )
+      ),
+      "Some states specified in the transition matrix differ from 'state_names'"
     )
   }
 )
@@ -312,7 +323,8 @@ test_that(
       class = "data.frame")
     
     expect_error(
-      heemod:::create_parameters_from_tabular(pb_par)
+      heemod:::create_parameters_from_tabular(pb_par),
+      "'low' and 'high' must be both non missing in DSA tabular definition."
     )
     
     pb_par2 <- pb_par
@@ -334,7 +346,8 @@ test_that(
       class = "data.frame")
     
     expect_error(
-      heemod:::create_parameters_from_tabular(pb_par)
+      heemod:::create_parameters_from_tabular(pb_par),
+      "Both 'low' and 'high' columns must be present"
     )
     
     pb_par <- structure(list(
@@ -350,7 +363,8 @@ test_that(
       class = "data.frame")
     
     expect_error(
-      heemod:::create_parameters_from_tabular(pb_par)
+      heemod:::create_parameters_from_tabular(pb_par),
+      "No non-missing values in columns 'low' and 'high'"
     )
     
     pb_par <- structure(list(
@@ -366,7 +380,8 @@ test_that(
       class = "data.frame")
     
     expect_error(
-      heemod:::create_parameters_from_tabular(pb_par)
+      heemod:::create_parameters_from_tabular(pb_par),
+      "No non-missing values in column 'psa'."
     )
   }
 )
@@ -384,7 +399,9 @@ test_that(
       class = "data.frame")
     
     expect_error(
-      heemod:::create_options_from_tabular(opt_pb)
+      heemod:::create_options_from_tabular(opt_pb),
+      "Some option names are duplicated: method",
+      fixed = TRUE
     )
     
     opt_pb <- structure(list(
@@ -397,7 +414,24 @@ test_that(
       class = "data.frame")
     
     expect_error(
-      heemod:::create_options_from_tabular(opt_pb)
+      heemod:::create_options_from_tabular(opt_pb),
+      "Unknown options: cycleszzz", 
+      fixed = TRUE
+    )
+  
+    opt_pb <- structure(list(
+      option = c("cost", "effect", "method", "cycles", 
+                 "n", "init"),
+      value = c("cost", "qaly", "end", "50", "100", "c(1, 0, 0, 0)")),
+      .Names = c("option", 
+                 "value"),
+      row.names = c(1L, 2L, 3L, 4L, 5L, 6L),
+      class = "data.frame")
+    
+    expect_warning(
+      heemod:::create_options_from_tabular(opt_pb),
+      "initial values enclosed in c(); removing",
+      fixed = TRUE
     )
     
     test_par <- define_parameters(
@@ -423,7 +457,8 @@ test_that(
     expect_error(
       heemod:::read_file(
         system.file("tabular/test/wrong_ext.tab", package = "heemod")
-      )
+      ),
+      "file names must be for csv, xls, or xlsx"
     )
     
     expect_error(
@@ -535,10 +570,13 @@ test_that(
       fixed = TRUE
     )
     expect_error(
-      heemod:::create_matrix_from_tabular(tm_spec, NULL)
+      heemod:::create_matrix_from_tabular(tm_spec, NULL),
+      "length(state_names) > 0 is not TRUE",
+      fixed = TRUE
     )
     expect_error(
-      heemod:::create_matrix_from_tabular(NULL, state_names)
+      heemod:::create_matrix_from_tabular(NULL, state_names),
+      "'trans_probs' must be a data frame."
     )
   }
 )
