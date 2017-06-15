@@ -1349,11 +1349,27 @@ check_survival_specs <-
       warning("censor_code not defined in surv_specs; setting to 0 for all rows")
       surv_specs$censor_code <- 0
     }
+    if(!"treatment_flag_col" %in% names(surv_specs)){
+      warning("treatment_flag_col not defined in surv_specs;",
+              "setting to 'ITTFL' for PFS and OS,  'TRTFL' for ToT")
+      surv_specs$treatment_flag_col <- "ITTFL"
+      surv_specs[surv_specs$type == "ToT", "treatment_flag_col"] <- "TRTFL"
+    }
+    if(any(is.na(surv_specs$treatment_flag_col))){
+      warning("treatment_flag_col is 'NA' for some rows;",
+              "setting to 'ITTFL' for PFS and OS,  'TRTFL' for ToT")
+      surv_specs[is.na(surv_specs$treatment_flag_col) & 
+                   surv_specs$type %in% c("PFS", "OS", "pfs", "os")] <- 
+        "ITTFL"
+      surv_specs[is.na(surv_specs$treatment_flag_col) & 
+                   surv_specs$type %in% c("ToT")] <- 
+        "TRTFL"
+    }
       
     surv_spec_col_names <- c("type", "treatment", "data_directory", "data_file",
                              "fit_directory", "fit_name", "fit_file",
                              "time_col", "treatment_col", "censor_col",
-                             "event_code", "censor_code"
+                             "event_code", "censor_code", "treatment_flag_col"
                              )
     if(! identical(sort(names(surv_specs)), sort(surv_spec_col_names))){
       extra_names <- setdiff(names(surv_specs), surv_spec_col_names)
@@ -1385,15 +1401,12 @@ check_survival_specs <-
         paste(surv_specs$type[unknown_type], collapse = ", ")
       )
     
-    ## sort survival specs by treatment, then PFS and OS
-    ## our checks will make sure that we have the right entries,
-    ##   and that they are in the right order
     surv_specs <- 
-      surv_specs %>% dplyr::arrange_(~ treatment, ~ desc(type))
+      surv_specs %>% dplyr::arrange_(~ treatment, ~ type)
       
     
-    surv_specs$isos <- surv_specs$type == "OS"
-    surv_specs$ispfs <- surv_specs$type == "PFS"
+    surv_specs$isos <- surv_specs$type %in% c("OS", "os")
+    surv_specs$ispfs <- surv_specs$type %in% c("PFS", "pfs")
     surv_specs$istot <- surv_specs$type == "ToT"
     
     surv_specs_check <- 
@@ -1407,26 +1420,6 @@ check_survival_specs <-
        any(surv_specs_check$num_pfs != 1)){
       stop("each treatment must have exactly one PFS and one OS entry")
     }
-    
-    ## NOTE:   this should be temporary!
-    surv_specs <-
-      surv_specs %>% dplyr::filter_(~type %in% c("PFS", "OS"))
-    
-    # os_ind <- grep("os", surv_specs$type, ignore.case = TRUE)
-    # pfs_ind <- grep("pfs", surv_specs$type, ignore.case = TRUE)
-    # all_even_os <- identical(as.numeric(os_ind), 
-    #                          seq(from = 2, 
-    #                              to = nrow(surv_specs),
-    #                              by = 2))
-    # all_odd_pfs <- identical(as.numeric(pfs_ind), 
-    #                          seq(from = 1, 
-    #                              to = nrow(surv_specs),
-    #                              by = 2))
-    # same_treatments <- 
-    #   identical(surv_specs$treatment[os_ind],
-    #             surv_specs$treatment[pfs_ind])
-    # if(!all_even_os | !all_odd_pfs | !same_treatments)
-    #   stop("each treatment must have exactly one PFS and one OS entry")
     
     if(any(dups <- duplicated(surv_specs[, c("type", "treatment")]))){
       print(surv_specs[dups,])

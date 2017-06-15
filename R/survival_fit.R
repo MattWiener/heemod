@@ -171,9 +171,22 @@ survival_from_data <-
                    read_file(data_files[this_row]) %>%
                    dplyr::filter_(filter_str)
                  
+                 ## filter by the treatment flag column
+                 ## (typically intent to treat or actual treatment)
+                 treatment_flag_name <- survival_specs[this_row, "treatment_flag_col"]
+                 treat_string <-
+                   paste(treatment_flag_name, "==", 
+                         "'",
+                         c("Y", "Yes", "1", "TRUE", "T"),
+                         "'",
+                         sep = "",
+                         collapse = " | ")
+                 
+                 this_data <-  dplyr::filter_(this_data, treat_string)
+                 
                  ## set up the event values: 1 for event, 0 for censored
-                 this_data <-
-                   fix_censor_col(this_data,
+                  this_data <-
+                    fix_censor_col(this_data,
                                   survival_specs[this_row, "censor_col"],
                                   survival_specs[this_row, "censor_code"],
                                   survival_specs[this_row, "event_code"],
@@ -199,6 +212,7 @@ survival_from_data <-
                      dplyr::filter_(these_sets,
                                     ~ type == survival_specs[this_row, "type"])
                  }
+                 
                  if (nrow(these_sets) == 0)
                    these_sets <- data.frame(
                      set_name = "all",
@@ -464,6 +478,7 @@ f_fit_survival_models <-
     stopifnot(treatment_col_name %in% names(survdata))
     stopifnot(is.null(covariate_col_names) |
                 all(covariate_col_names %in% names(survdata)))
+    
     ## make a list of the subgroups, and add a group of all together
     unique_groups <- as.character(unique(survdata[, treatment_col_name]))  
     ##groups_list <- c(list(unique_groups))

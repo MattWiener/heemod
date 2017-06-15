@@ -43,7 +43,7 @@ from data and using them to run economic models.
 
 The source of the survival data, as well as the names and locations of the resulting fits, 
 are specified in a file with one row for each (treatment, outcome) pair, where the outcome can be
-either progression-free survival (PFS) or overall survival (OS).
+either progression-free survival (PFS), overall survival (OS), or time on treatment (ToT).
  Here’s an example of such a file, pointing to an example using randomly-generated data
  and two fake treatments, “A” and “B”:
 
@@ -71,10 +71,18 @@ it begins with a double slash, or, on Windows, a letter followed by a colon),
 and treats them accordingly.  We can have data for
 different treatments and outcomes in different files or in the same file -
 if they are in the same file, we can specify the columns to be used
-to specify the different outcomes.  Finally, because different data sets
+to specify the different outcomes.  Because different data sets
 may specify events and censoring in different ways, the columns `event_code`
 and `censor_code` allow us to specify those.   If those columns are omitted,
 `event_code` will be set to 1 and `censor_code` to 0.
+
+An additional column, `treatment_flag_col`, specifies a column that tells whether
+given data points should be included in the analysis - typically based on either
+intention to treat or actual treatment delivery.   If the column is not present,
+it will be set to 'ITTFL' (intention to treat flag) for rows in which the
+type is 'PFS' or 'OS', and 'TRTFL' (treatment flag) for rows in which the type 
+is "ToT".
+
 
 ## Specifying multiple subsets of data for survival models
 

@@ -2,7 +2,8 @@ context("fitting survival models")
 
 data <- data.frame(time = rexp(100, rate = 0.01),
                    status = rep(1, 100),
-                   group = rep(1, 100))
+                   group = rep(1, 100),
+                   ITTFL = rep("Y", 100))
 
 test_that("input errors are caught", {
   expect_error(
@@ -11,7 +12,6 @@ test_that("input errors are caught", {
     dist,
     time_col_name = "time2",
     censor_col_name = "status",
-    treatment_col_name = "group",
     fit_indiv_groups = F
   ),
   "time_col_name"
@@ -121,11 +121,11 @@ test_that("getting survival inputs works",
              read_file(system.file("tabular/surv/survival_info.csv", 
                                    package = "heemod"))
              check_survival_specs(ok_surv_info)
-           for(i in 1:(ncol(ok_surv_info) - 2)){
+           for(i in 1:(ncol(ok_surv_info) - 3)){
              expect_error(check_survival_specs(ok_surv_info[, -i]),
                           "missing names")
            }
-            for(i in ncol(ok_surv_info) - 1:0){
+            for(i in ncol(ok_surv_info) - 2:0){
               expect_warning(check_survival_specs(ok_surv_info[, -i]),
                            "not defined in surv_specs")
             }
@@ -347,6 +347,7 @@ test_that("we handle fitting errors",
               2,1,"A",
               44,1,"A"
             )
+            this_dat$ITTFL <- "Y"
             suppressMessages(
             fit_tib <- f_fit_survival_models(this_dat, 
                                          dist = c("exp", "weibull", "gengamma"),
