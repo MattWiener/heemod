@@ -117,14 +117,19 @@ write_fits_to_excel_from_tibble <-
           dplyr::do_(~send_info_to_workbook(., wb = wb, 
                                           skip_between = skip_between,
                                           alignment = alignment))
-    use_pieces <- c("time", "n.risk", "n.event", "surv", "std.err",
-                    "lower", "upper")
+    use_pieces_str <- 
+      "c('time', 'n.risk', 'n.event', 'surv', 'std.err', 'lower', 'upper')"
+    do_str <- 
+      paste("data.frame(summary(object = .$fit[[1]], summary_type = 'standard')[",
+            use_pieces_str,
+            "])",
+            sep = ""
+            )
     base_km_summaries <- 
       fit_tibble %>% 
       dplyr::filter_(~ dist == "km") %>%
       dplyr::group_by_(~ type, ~ treatment, ~ set_name) %>%
-      dplyr::do_('data.frame(summary(object = .$fit[[1]], 
-                                   summary_type = "standard")[use_pieces])') %>%
+      dplyr::do_(do_str) %>%
       dplyr::ungroup()
     
     

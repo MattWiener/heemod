@@ -99,8 +99,10 @@ partitioned_survival_from_ref_struc <- function(ref,
 #' @param write_report should the call produce an html report with
 #'    diagnostic tables and plots on the fits?
 #' @param write_excel should the call produce a csv file summarizing fits?
+#' @param report_template If `write_report == TRUE`, 
+#'   a template for the report.
 #' @return a tibble with columns `type`, `treatment`, `set_name`,
-#'    `dist`, `fit`, `set_def`, and `time_subtract`
+#    `dist`, `fit`, `set_def`, and `time_subtract`
 #' @details By default, the function fits with seven 
 #'   different distribution functions:
 #'   exponential,  Weibull,  lognormal, log-logistic, 
@@ -132,7 +134,8 @@ survival_from_data <-
            set_definitions = "set_definitions.csv",
            report_file_name = "survival_report",
            write_report = FALSE,
-           write_excel = write_report) {
+           write_excel = write_report,
+           report_template) {
     survival_specs <- check_survival_specs(survival_specs)
     
     if (just_load) {
@@ -294,22 +297,27 @@ survival_from_data <-
       
       names(surv_models) <- survival_specs$fit_name
       surv_models <- do.call("rbind", surv_models)
+
+      if (write_report) {
+        if(!file.exists(report_template))
+          stop("cannot find report template file ",
+               report_template)
+        rmarkdown::render(
+          report_template,
+          params = list(fit_tibble = surv_models,
+                        extra_args = NULL),
+          output_file = file.path(location,
+                                  paste(report_file_name, ".html",
+                                        sep = ""))
+        )
+      }
+
       if (write_excel) {
         write_fits_to_excel_from_tibble(
           fit_tibble = surv_models,
           wb = file.path(location,
                          paste(report_file_name, ".xlsx", sep = "")),
           alignment = "horizontal"
-        )
-      }
-      if (write_report) {
-        rmarkdown::render(
-          "../survival_fit_report_template.Rmd",
-          params = list(fit_tibble = surv_models,
-                        extra_args = NULL),
-          output_file = file.path(location,
-                                  paste(report_file_name, ".html",
-                                        sep = ""))
         )
       }
       

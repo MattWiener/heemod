@@ -8,7 +8,7 @@ survival_from_data(location, survival_specs, dists = dists,
   save_fits = TRUE, just_load = FALSE,
   set_definitions = "set_definitions.csv",
   report_file_name = "survival_report", write_report = FALSE,
-  write_excel = write_report)
+  write_excel = write_report, report_template)
 }
 \arguments{
 \item{location}{base directory for the analysis.}
@@ -32,10 +32,12 @@ diagnostic tables and plots on the fits.}
 diagnostic tables and plots on the fits?}
 
 \item{write_excel}{should the call produce a csv file summarizing fits?}
+
+\item{report_template}{If \code{write_report == TRUE},
+a template for the report.}
 }
 \value{
 a tibble with columns \code{type}, \code{treatment}, \code{set_name},
-\code{dist}, \code{fit}, \code{set_def}, and \code{time_subtract}
 }
 \description{
 Title Get survival analysis curves from data
