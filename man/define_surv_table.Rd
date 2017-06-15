@@ -4,16 +4,21 @@
 \alias{define_surv_table}
 \alias{define_surv_table.data.frame}
 \alias{define_surv_table.character}
+\alias{define_wtd_surv_table.character}
 \title{Define a survival distribution based on explicit survival probabilities}
 \usage{
-define_surv_table(x)
+define_surv_table(x, by_age = FALSE)
 
-\method{define_surv_table}{data.frame}(x)
+\method{define_surv_table}{data.frame}(x, by_age = FALSE)
 
-\method{define_surv_table}{character}(x)
+\method{define_surv_table}{character}(x, by_age = FALSE)
+
+\method{define_wtd_surv_table}{character}(x, ...)
 }
 \arguments{
 \item{x}{a data frame with columns \code{time} and \code{survival}}
+
+\item{by_age}{is time actually age?  If so, don't require time to start wtih 0.}
 }
 \value{
 a \code{surv_table} object, which can be used with \code{\link[=compute_surv]{compute_surv()}}.

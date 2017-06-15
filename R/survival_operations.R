@@ -522,3 +522,80 @@ summary.surv_projection <-
     res
           }
   
+#' Convert an age-based table to a cycle-based table
+#'
+#' @param x a survival object
+#' @param age_init initial age the table will be applied to
+#' @param cycle_length length of cycles
+#'
+#' @return a table with `time` renormalized to be in terms of cycles,
+#'   with time 0 corresponding to age `age_init`
+#' @details This is used to convert a mortality table for use as a
+#'   survival curve in terms of cycles of the model.  Typically,
+#'   age_surv will have been constructed using [define_surv_table()]
+#'   or [define_wtd_surv_table()].
+#' @export
+#'
+#' @examples
+
+age_to_time <- function(x, ...){
+  UseMethod("age_to_time")
+}
+
+#' @rdname age_to_time
+#' @export
+age_to_time.surv_table <- function(x, age_init, cycle_length){
+  
+  if(!exists("age_init"))
+    stop("argument 'age_init' must be supplied.")
+  if(!exists("cycle_length"))
+    stop("argument 'cycle_length' must be supplied.")
+  if(age_init < 0)
+    stop("age_init has value ",
+         age_init,
+         " ; but negative age makes no sense")
+  if(cycle_length <= 0)
+    stop("cycle_length has value ",
+         cycle_length,
+         " ; but zero or negative cycle length makes no sense")
+  x$time <- x$time - age_init
+  x <- x[x$time >= 0, ]
+  new_time <- 
+    seq(from = min(x$time), 
+        to = max(x$time), 
+        by = cycle_length)
+  evenly_spaced_hazard <- 
+    approx(x$time, log(x$survival),
+         xout = new_time)
+  res <- data.frame(time = new_time, 
+                    survival = exp(evenly_spaced_hazard$y))
+  class(res) <- class(x)
+  res
+}
+
+#' @rdname age_to_time
+#' @export
+age_to_time.surv_object <- function(x, ...){
+  pieces <- grep("dist", names(x))
+  if(length(pieces))
+    x[pieces] <-
+      lapply(x[pieces], function(y){age_to_time(y, ...)})
+  x
+}
+#' @rdname age_to_time
+#' @export
+age_to_time.surv_pooled <- 
+  function(x, ...){
+    x$dists <- lapply(x$dists,
+                      age_to_time,
+                      ...)
+    x
+  }
+
+#' @rdname age_to_time
+#' @export
+age_to_time.default <- 
+  function(x, ...) 
+    {
+    x
+    }
