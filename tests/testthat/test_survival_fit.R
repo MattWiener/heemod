@@ -211,7 +211,7 @@ test_that("fitting works (including with subsets)",
             expect_equal(nrow(metrics), 20)
             expect_identical(round(metrics[1, c("AIC", "BIC", "m2LL")], 3),
                              tibble::tribble(~AIC, ~BIC, ~m2LL,
-                                             494.77, 496.662, 492.77)
+                                             345.293, 347.205, 343.293)
             
                              )
             ## now test with absolute path
@@ -232,7 +232,7 @@ test_that("fitting works (including with subsets)",
             expect_equal(nrow(metrics), 20)
             expect_identical(round(metrics[1, c("AIC", "BIC", "m2LL")], 3),
                              tibble::tribble(~AIC, ~BIC, ~m2LL,
-                                             494.77, 496.662, 492.77)
+                                             345.293, 347.205, 343.293)
                              
             )
             
@@ -241,7 +241,7 @@ test_that("fitting works (including with subsets)",
             metrics <- extract_surv_fit_metrics(these_fits[1,])
             expect_identical(round(metrics[, c("AIC", "BIC", "m2LL")], 3),
                              tibble::tribble(~AIC, ~BIC, ~m2LL,
-                                             494.77, 496.662, 492.77)
+                                             345.293, 347.205, 343.293)
                              )
             ## make sure we get an error if we specify incorrect event codes
             eventcode_surv_info_error <-
@@ -283,14 +283,14 @@ test_that("fitting works (including with subsets)",
             expect_identical(unique(subset_fits_by_type[, 1:3]),
                              tibble::tribble(
                                ~type, ~treatment, ~set_name,
+                               "OS", "A", "all",
                                "PFS", "A", "all",
                                "PFS", "A", "GT50",
-                               "OS", "A", "all",
+                               "OS", "B", "all",
+                               "OS", "B", "B5",
                                "PFS", "B", "all",
                                "PFS", "B", "GT50",
-                               "PFS", "B", "B5",
-                               "OS", "B", "all",
-                               "OS", "B", "B5"
+                               "PFS", "B", "B5"
                              )
             )
             expect_error(
