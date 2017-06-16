@@ -8,15 +8,15 @@
 \alias{age_to_time.default}
 \title{Convert an age-based table to a cycle-based table}
 \usage{
-age_to_time(x, ...)
+age_to_time(x, age_init, cycle_length)
 
 \method{age_to_time}{surv_table}(x, age_init, cycle_length)
 
-\method{age_to_time}{surv_object}(x, ...)
+\method{age_to_time}{surv_object}(x, age_init, cycle_length)
 
-\method{age_to_time}{surv_pooled}(x, ...)
+\method{age_to_time}{surv_pooled}(x, age_init, cycle_length)
 
-\method{age_to_time}{default}(x, ...)
+\method{age_to_time}{default}(x, age_init, cycle_length)
 }
 \arguments{
 \item{x}{a survival object}
@@ -37,4 +37,10 @@ This is used to convert a mortality table for use as a
 survival curve in terms of cycles of the model.  Typically,
 age_surv will have been constructed using \code{\link[=define_surv_table]{define_surv_table()}}
 or \code{\link[=define_wtd_surv_table]{define_wtd_surv_table()}}.
+}
+\examples{
+
+ df <- data.frame(time = c(50, 51, 55, 60), survival = c(1, 0.9, 0.7, 0.5))
+ st <- define_surv_table(df, by_age = TRUE)
+ age_to_time(st, age_init = 50, cycle_length = 1)
 }

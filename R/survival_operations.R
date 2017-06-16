@@ -469,7 +469,6 @@ plot.surv_shift <- plot.surv_obj
 #' @param ... other arguments
 #' 
 #' @return
-#' @export
 #'
 summary.surv_shift <- 
   function(object, summary_type = c("plot", "standard"), ...){
@@ -537,8 +536,12 @@ summary.surv_projection <-
 #' @export
 #'
 #' @examples
+#' 
+#'  df <- data.frame(time = c(50, 51, 55, 60), survival = c(1, 0.9, 0.7, 0.5))
+#'  st <- define_surv_table(df, by_age = TRUE)
+#'  age_to_time(st, age_init = 50, cycle_length = 1)
 
-age_to_time <- function(x, ...){
+age_to_time <- function(x, age_init, cycle_length){
   UseMethod("age_to_time")
 }
 
@@ -565,7 +568,7 @@ age_to_time.surv_table <- function(x, age_init, cycle_length){
         to = max(x$time), 
         by = cycle_length)
   evenly_spaced_hazard <- 
-    approx(x$time, log(x$survival),
+    stats::approx(x$time, log(x$survival),
          xout = new_time)
   res <- data.frame(time = new_time, 
                     survival = exp(evenly_spaced_hazard$y))
@@ -575,27 +578,28 @@ age_to_time.surv_table <- function(x, age_init, cycle_length){
 
 #' @rdname age_to_time
 #' @export
-age_to_time.surv_object <- function(x, ...){
+age_to_time.surv_object <- function(x, age_init, cycle_length){
   pieces <- grep("dist", names(x))
   if(length(pieces))
     x[pieces] <-
-      lapply(x[pieces], function(y){age_to_time(y, ...)})
+      lapply(x[pieces], function(y){age_to_time(y, age_init, cycle_length)})
   x
 }
 #' @rdname age_to_time
 #' @export
 age_to_time.surv_pooled <- 
-  function(x, ...){
+  function(x, age_init, cycle_length){
     x$dists <- lapply(x$dists,
                       age_to_time,
-                      ...)
+                      age_init = age_init,
+                      cycle_length = cycle_length)
     x
   }
 
 #' @rdname age_to_time
 #' @export
 age_to_time.default <- 
-  function(x, ...) 
+  function(x, age_init, cycle_length) 
     {
     x
     }

@@ -38,6 +38,11 @@ eval_strategy <- function(strategy, parameters, cycles,
     cycles > 0,
     length(cycles) == 1
   )
+
+  if(length(parameters))
+    param_env <- parameters[[1]]$env
+  else
+    param_env <- emptyenv()
   
   ## expand states if necessary, and retrieve values.   
   ##  If no expansion, then it returns the same values
@@ -62,8 +67,10 @@ eval_strategy <- function(strategy, parameters, cycles,
   
   states <- eval_state_list(uneval_states, parameters)
   
+  ## may need some of the elements of the parameter environment
+  
   transition <- eval_transition(uneval_transition,
-                                parameters)
+                                parameters, extra_env = param_env)
   
   count_table <- compute_counts(
     x = transition,

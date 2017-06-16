@@ -316,8 +316,9 @@ test_that("we can run construct_part_surv_tib",
               )
             expect_identical(class(mixed_dist_part_surv[[1, "part_surv"]]$os),
                              "lazy")
-            expect_identical(lazyeval::lazy_eval(mixed_dist_part_surv[[1, "part_surv"]]$pfs),
-                             'define_survival(distribution = "exp", rate = 1/100)')
+            expect_identical(
+              capture.output(lazyeval::lazy_eval(mixed_dist_part_surv[[1, "part_surv"]]$pfs)$expr),
+              'define_survival(distribution = "exp", rate = 1/100)')
             expect_identical(class(lazyeval::lazy_eval(mixed_dist_part_surv[[1, "part_surv"]]$os)),
                              "flexsurvreg")
             prob <- compute_surv(lazyeval::lazy_eval(mixed_dist_part_surv[[1, "part_surv"]]$os), 1)

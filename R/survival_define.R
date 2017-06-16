@@ -191,7 +191,7 @@ define_surv_table.character <- function(x, by_age = FALSE){
   define_surv_table(read_file(x), by_age)
 }
 
-#' Title
+#' combine multiple columns into a survival table
 #'
 #' @param x a data frame, or a string pointing to such a data frame
 #' @param time_col the column of x measuring time
@@ -204,13 +204,21 @@ define_surv_table.character <- function(x, by_age = FALSE){
 #' @export
 #'
 #' @examples
-define_wtd_surv_table <- function(x, ...){
+#' df <- data.frame(age = c(50, 55, 60, 65), 
+#'                  male = c(1, 0.9, 0.8, 0.7),
+#'                  female = c(1, 0.8, 0.7, 0.6)
+#'                  )
+#' wtd_table <- 
+#'    define_wtd_surv_table(df, time_col = "age",
+#'                          weights = c(male = 0.52, female = 0.48),
+#'                          by_age = TRUE)                
+define_wtd_surv_table <- function(x, time_col, weights, by_age){
   UseMethod("define_wtd_surv_table")
 }
-#' @rdname define_surv_table
+#' @rdname define_wtd_surv_table
 #' @export
-define_wtd_surv_table.character <- function(x, ...){
-  define_wtd_surv_table(read_file(x), ...)
+define_wtd_surv_table.character <- function(x, time_col, weights, by_age){
+  define_wtd_surv_table(read_file(x), time_col, weights, by_age)
 }
 
 #' @rdname define_wtd_surv_table
@@ -220,6 +228,8 @@ define_wtd_surv_table.data.frame <- function(x, time_col, weights, by_age){
     stop("column '",
          time_col, 
          "' not in table")
+  if(time_col == "age" & !by_age)
+    warning("time_col is 'age', but 'by_age' is FALSE - is that intentional?")
   other_cols <- names(weights)
   missing_cols <- !(other_cols %in% names(x))
   if(any(missing_cols))

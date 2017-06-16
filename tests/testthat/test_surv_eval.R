@@ -412,11 +412,15 @@ test_that(
     bad_surv_table_df <- data.frame(time = c(1, 5, 10),
                                   survival = c(0.9, 0.7, 0.4))
     expect_error(define_surv_table(bad_surv_table_df),
-                 "surv_table data must start with time 0 and survival 1")
-    bad_surv_table_df <- data.frame(time = c(0, 1, 5, 10),
-                                  survival = c(0.95, 0.9, 0.7, 0.4))
+                 "surv_table data must start with survival 1")
+    bad_surv_table_df <- data.frame(time = c(0.5, 1, 5, 10),
+                                  survival = c(1, 0.9, 0.7, 0.4))
     expect_error(define_surv_table(bad_surv_table_df),
-                 "surv_table data must start with time 0 and survival 1")
+                 "surv_table data must start with time 0")
+    bad_surv_table_df <- data.frame(time = c(0.5, 1, 5, 10),
+                                    survival = c(0.95, 0.9, 0.7, 0.4))
+    expect_error(define_surv_table(bad_surv_table_df, by_age = TRUE),
+                 "surv_table data must start with survival 1")
     
     surv_table_df <- data.frame(time = c(0, 1, 5, 10),
                               survival = c(1, 0.9, 0.7, 0.4))

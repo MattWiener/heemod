@@ -2,10 +2,13 @@
 % Please edit documentation in R/survival_define.R
 \name{define_wtd_surv_table}
 \alias{define_wtd_surv_table}
+\alias{define_wtd_surv_table.character}
 \alias{define_wtd_surv_table.data.frame}
-\title{Title}
+\title{combine multiple columns into a survival table}
 \usage{
-define_wtd_surv_table(x, ...)
+define_wtd_surv_table(x, time_col, weights, by_age)
+
+\method{define_wtd_surv_table}{character}(x, time_col, weights, by_age)
 
 \method{define_wtd_surv_table}{data.frame}(x, time_col, weights, by_age)
 }
@@ -24,8 +27,18 @@ the columns of \code{x} to which the weights should be applied.}
 a \code{surv_pooled} object (see \code{\link[=mix]{mix()}}).
 }
 \description{
-Title
+combine multiple columns into a survival table
 }
 \details{
 \code{weights} are not checked for adding to 1.
+}
+\examples{
+df <- data.frame(age = c(50, 55, 60, 65), 
+                 male = c(1, 0.9, 0.8, 0.7),
+                 female = c(1, 0.8, 0.7, 0.6)
+                 )
+wtd_table <- 
+   define_wtd_surv_table(df, time_col = "age",
+                         weights = c(male = 0.52, female = 0.48),
+                         by_age = TRUE)                
 }

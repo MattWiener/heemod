@@ -162,9 +162,19 @@ get_state_names.part_surv <- function(x) {
   x$state_names
 }
 
-eval_transition.part_surv <- function(x, parameters) {
+eval_transition.part_surv <- function(x, parameters, extra_env = emptyenv()) {
   
   time_ <- c(0, parameters$markov_cycle)
+  
+  ## x$pfs or x$os may themselves contain lazy distributions that
+  ##   were defined not by fitting data, but with a string.  Those
+  ##   strings may have referred to information that ends up in
+  ##   the environment for parameters (for example, data frames that
+  ##   were placed in the appropriate folder of the model structure)
+  
+  pass_env <- new.env()
+  appendEnv(pass_env, extra_env)
+  appendEnv(pass_env, list2env(dplyr::slice(parameters, 1)))
   
   pfs_dist <- lazyeval::lazy_eval(
     x$pfs, 
@@ -175,7 +185,8 @@ eval_transition.part_surv <- function(x, parameters) {
     pfs_dist,
     time = time_,
     cycle_length = x$cycle_length[1],
-    type = "surv"
+    type = "surv",
+    extra_env = pass_env
   )
   
   os_dist <- lazyeval::lazy_eval(
@@ -187,7 +198,8 @@ eval_transition.part_surv <- function(x, parameters) {
     os_dist,
     time = time_,
     cycle_length = x$cycle_length[2],
-    type = "surv"
+    type = "surv",
+    extra_env = pass_env
   )
   
   structure(
@@ -329,7 +341,6 @@ guess_part_surv_state_names <- function(state_names) {
 #'   elements are survival objects of various kinds, with the
 #'   commonality that they can be used in [compute_surv()].
 #'
-#' @examples
 
 construct_part_surv_tib <-
   function(surv_def, ref,
@@ -347,11 +358,11 @@ construct_part_surv_tib <-
     }
     surv_def <- tibble::as_tibble(surv_def)
     
-    ## we handle directly defined distributions
-    ##   (those defined with define_survival())
-    ##   separately from fits
-    with_direct_dist <- dplyr::filter_(surv_def, ~ grepl("^define_survival", dist))
-    should_be_fits <- dplyr::filter_(surv_def, ~ !grepl("^define_survival", dist))
+    
+    ## we handle fits differently from other distributions
+
+    should_be_fits <- dplyr::filter_(surv_def, ~ grepl("^fit\\(", dist))
+    with_direct_dist <- dplyr::filter_(surv_def, ~ !grepl("^fit\\(", dist))
     
     should_be_fits_3 <- should_be_fits
     if (nrow(should_be_fits) > 0) {
@@ -374,7 +385,17 @@ construct_part_surv_tib <-
                                            fit_tibble)
   }
     direct_dist_def_3 <- with_direct_dist
-    direct_dist_def_3$fit <- direct_dist_def_3$dist
+    ## need to set up to evaluate the direct distributions
+    ##   in case they call any parameters
+    
+    ## direct_dist_def_3$fit <- direct_dist_def_3$dist
+    direct_dist_def_3$fit <- vector("list", nrow(direct_dist_def_3))
+    for(i in seq(along = direct_dist_def_3$dist))
+      direct_dist_def_3$fit[[i]] <- lazyeval::as.lazy(direct_dist_def_3$dist[[i]], 
+                                                    env = new.env())
+
+    
+    
     direct_dist_def_3$set_def <- rep(NA, nrow(direct_dist_def_3))
     if(!("time_subtract" %in% names(direct_dist_def_3)))
       direct_dist_def_3$time_subtract <- rep(NA, nrow(direct_dist_def_3))
@@ -382,6 +403,7 @@ construct_part_surv_tib <-
     ## and now we can rejoin them and continue
     surv_def_4 <-
       rbind(should_be_fits_3, direct_dist_def_3) %>%
+      dplyr::mutate_(.type = ~ toupper(.type)) %>%
       dplyr::group_by_(~ .strategy, ~ .type) %>%
       dplyr::do_(fit = ~ join_fits_across_time(.)) %>%
       dplyr::ungroup()

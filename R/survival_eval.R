@@ -423,11 +423,13 @@ eval_surv.surv_projection <- function(x, time, ...) {
   
   surv1 <- eval_surv(
     x$dist1,
-    time = time 
+    time = time,
+    ...
   )
   surv2 <- eval_surv(
     x$dist2,
-    time = time
+    time = time,
+    ...
   )
   
   ind_s1 <- time < x$at
@@ -435,11 +437,13 @@ eval_surv.surv_projection <- function(x, time, ...) {
   
   surv1_p_at <- eval_surv(
     x$dist1,
-    time = x$at 
+    time = x$at,
+    ...
     )
   surv2_p_at <- eval_surv(
     x$dist2,
     time = x$at,
+    ...,
     .internal = TRUE)
   
   ret[ind_s1] <- surv1[ind_s1]
@@ -464,7 +468,8 @@ eval_surv.surv_pooled <- function(x, time, ...) {
       eval_surv(
         x$dists[[i]],
         time = time, 
-        type = "surv"
+        type = "surv",
+        ...
       )
   }
   
@@ -480,7 +485,8 @@ eval_surv.surv_ph <- function(x, time, ...) {
   
   ret <- eval_surv(
     x$dist,
-    time = time 
+    time = time,
+    ...
   ) ^ x$hr
   
   ret
@@ -499,7 +505,8 @@ eval_surv.surv_shift <- function(x, time, ...) {
     ##check_cycle_inputs(time_, cycle_length)
     ret[keep_me] <- eval_surv(
       x$dist,
-      time = time_ 
+      time = time_,
+      ...
     ) 
   }
 
@@ -527,7 +534,8 @@ eval_surv.surv_po <- function(x, time, ...) {
 
   p <- eval_surv(
     x$dist,
-    time = time
+    time = time,
+    ...
   )
   
   ret <- 1 / ((((1 - p) / p) * x$or) + 1)
@@ -549,7 +557,8 @@ eval_surv.surv_add_haz <- function(x, time, ...) {
   for (i in seq_len(n_dist)) {
     surv_mat[ ,i] <- eval_surv(
       x$dists[[i]],
-      time = time 
+      time = time,
+      ...
     )
   }
   
@@ -585,7 +594,11 @@ eval_surv.surv_table <- function(x, time, ...){
 }
 
 eval_surv.lazy <- function(x, ...){
-  eval_surv(lazyeval::lazy_eval(x), ...)
+  dots <- list(...)
+  use_data <- list()
+  if("extra_env" %in% names(dots))
+    use_data <- as.list.environment(dots$extra_env)
+  eval_surv(lazyeval::lazy_eval(x), ..., data = use_data)
 }
 
 eval_surv.character <- function(x, ...){

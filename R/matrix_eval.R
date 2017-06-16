@@ -79,7 +79,7 @@ eval_transition <- function(x, ...) {
   UseMethod("eval_transition")
 }
 
-eval_transition.uneval_matrix <- function(x, parameters) {
+eval_transition.uneval_matrix <- function(x, parameters, ...) {
   
   # update calls to dispatch_strategy()
   x <- dispatch_strategy_hack(x)
