@@ -335,6 +335,25 @@ test_that(
       P = 0.33090
     )
     
+    expect_error(
+      define_survival(
+        dist = "weibull",
+        shape = 1.3797,
+        wrong_param = 4169.3446
+      ),
+      "Incorrect argument: wrong_param",
+      fixed = TRUE
+    )
+    
+    expect_error(
+      define_spline_survival(
+        scale = "odds",
+        GAMMA = c(-23.5136, 3.4483, 0.4873,-0.3147),
+        KNOT = c(4.276666, 6.219263, 6.771924, 7.806289)
+      ),
+      "Incorrect arguments: GAMMA, KNOT",
+      fixed = TRUE
+    )
     surv1_surv = surv1 %>%
       compute_surv(time=seq_len(10), cycle_length=200)
     fs1_surv = fs1 %>%
