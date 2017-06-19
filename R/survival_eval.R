@@ -598,7 +598,7 @@ eval_surv.lazy <- function(x, ...){
   use_data <- list()
   if("extra_env" %in% names(dots))
     use_data <- as.list.environment(dots$extra_env)
-  eval_surv(lazyeval::lazy_eval(x), ..., data = use_data)
+  eval_surv(lazyeval::lazy_eval(x, data = use_data), ...)
 }
 
 eval_surv.character <- function(x, ...){

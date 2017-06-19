@@ -570,7 +570,7 @@ age_to_time.surv_table <- function(x, age_init, cycle_length){
   evenly_spaced_hazard <- 
     stats::approx(x$time, log(x$survival),
          xout = new_time)
-  res <- data.frame(time = new_time, 
+  res <- data.frame(time = seq(along = new_time), 
                     survival = exp(evenly_spaced_hazard$y))
   class(res) <- class(x)
   res

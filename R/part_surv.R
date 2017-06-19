@@ -162,7 +162,7 @@ get_state_names.part_surv <- function(x) {
   x$state_names
 }
 
-eval_transition.part_surv <- function(x, parameters, extra_env = emptyenv()) {
+eval_transition.part_surv <- function(x, parameters, ...) {
   
   time_ <- c(0, parameters$markov_cycle)
   
@@ -171,9 +171,10 @@ eval_transition.part_surv <- function(x, parameters, extra_env = emptyenv()) {
   ##   strings may have referred to information that ends up in
   ##   the environment for parameters (for example, data frames that
   ##   were placed in the appropriate folder of the model structure)
-  
+  .dots <- list(...)
   pass_env <- new.env()
-  appendEnv(pass_env, extra_env)
+  if("extra_env" %in% names(.dots))
+    appendEnv(pass_env, .dots$extra_env)
   appendEnv(pass_env, list2env(dplyr::slice(parameters, 1)))
   
   pfs_dist <- lazyeval::lazy_eval(

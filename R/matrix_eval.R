@@ -70,12 +70,13 @@ check_matrix <- function(x) {
 #' 
 #' @param x an `uneval_matrix` object.
 #' @param parameters an `eval_parameters` object.
+#' @param ... possible additional arguments; used internally
 #'   
 #' @return An `eval_matrix` object (actually a list of 
 #'   transition matrices, one per cycle).
 #'   
 #' @keywords internal
-eval_transition <- function(x, ...) {
+eval_transition <- function(x, parameters, ...) {
   UseMethod("eval_transition")
 }
 

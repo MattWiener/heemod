@@ -4,12 +4,14 @@
 \alias{eval_transition}
 \title{Evaluate Markov Model Transition Matrix}
 \usage{
-eval_transition(x, ...)
+eval_transition(x, parameters, ...)
 }
 \arguments{
 \item{x}{an \code{uneval_matrix} object.}
 
 \item{parameters}{an \code{eval_parameters} object.}
+
+\item{...}{possible additional arguments; used internally}
 }
 \value{
 An \code{eval_matrix} object (actually a list of
