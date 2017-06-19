@@ -405,3 +405,93 @@ test_that("intravenous dosing cost function works",
             expect_equal(cost_iv_administration(1.5, 100, 20, prorate_first = FALSE),
                          110)
           })
+
+test_that("getting weighted costs works",
+          {
+      vialCost <- data.frame(treatment = "fake", size = 50, cost = 1000)
+      expect_equal(weighted_dose_costs("lnorm", 
+                                       params = c(meanlog = 4.3423559, 
+                                                  sdlog = 0.2116480), 
+                                       var_base = 50, 
+                                       dose_base = 100, 
+                                       dose_multiplier = 2, 
+                                       vialCost, 
+                                       subset_col = "treatment", 
+                                       subset_val = "fake",
+                                       share_vials = FALSE),
+                   weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
+                                               var_base = 50, 
+                                               dose_base = 100, 
+                                               dose_multiplier = 2,
+                                               vialCost, 
+                                               subset_col = "treatment", 
+                                               subset_val = "fake",
+                                               share_vials = FALSE)
+            )
+            expect_equal(round(weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
+                                        var_base = 50, dose_base = 100, 
+                                        dose_multiplier = 2, vialCost, "treatment", "fake",
+                                        share_vials = FALSE), 2),
+                         3636.36)
+            expect_equal(round(weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
+                                                           var_base = 50, dose_base = 100, 
+                                                           dose_multiplier = 2, vialCost, "treatment", "fake",
+                                                           share_vials = TRUE), 2),
+                         3140.94)
+            vialCost <- data.frame(treatment = "fake",
+                                   size = c(50, 250),
+                                   cost = c(2521, 12297)
+                                   )
+            expect_equal(round(weighted_norm_dose_costs(1.85, 0.25, 
+                                                           var_base = 0, dose_base = 0, 
+                                                           dose_multiplier = 320, vialCost, "treatment", "fake",
+                                                           share_vials = FALSE), 2),
+                         30511.71
+                         )
+            expect_equal(weighted_dose_costs("norm", params = c(mean = 1.85, sd = 0.25),
+                                             var_base = 0, 
+                                             dose_base = 0, 
+                                             dose_multiplier = 320, 
+                                             vialCost, "treatment", "fake",
+                                             share_vials = FALSE),
+                         weighted_norm_dose_costs(1.85, 0.25, 
+                                                  var_base = 0, dose_base = 0, 
+                                                  dose_multiplier = 320, 
+                                                  vialCost, "treatment", 
+                                                  "fake",
+                                                  share_vials = FALSE)
+            )
+                         
+            expect_error(weighted_norm_dose_costs(1.85, 0.25, 
+                                                  var_base = 0, dose_base = 0, 
+                                                  dose_multiplier = 320, vialCost, "treatment", "fake",
+                                                  share_vials = FALSE,
+                                                  qmin = 0, qmax = 0.99, by = 0.01),
+                         "it does not make sense for 'qmin' to be <= 0",
+                         fixed = TRUE
+                         )
+            expect_error(weighted_norm_dose_costs(1.85, 0.25, 
+                                                  var_base = 0, dose_base = 0, 
+                                                  dose_multiplier = 320, vialCost, "treatment", "fake",
+                                                  share_vials = FALSE,
+                                                  qmin = 0.01, qmax = 1, by = 0.01),
+                         "it does not make sense for 'qmax' to be >= 1",
+                         fixed = TRUE
+            )
+            expect_error(weighted_norm_dose_costs(1.85, 0.25, 
+                                                  var_base = 0, dose_base = 0, 
+                                                  dose_multiplier = 320, vialCost, "treatment", "fake",
+                                                  share_vials = FALSE,
+                                                  qmin = 0.01, qmax = 0.99, by = -0.01),
+                         "wrong sign in 'by' argument",
+                         fixed = TRUE
+            )
+            expect_error(weighted_dose_costs("norm", params = c(MEAN = 1.85, sd = 0.25), 
+                                                  var_base = 0, dose_base = 0, 
+                                                  dose_multiplier = 320, vialCost, "treatment", "fake",
+                                                  share_vials = FALSE),
+                         "mismatched arguments for function 'qnorm'",
+                         fixed = TRUE
+            )
+            
+          })

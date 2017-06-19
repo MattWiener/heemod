@@ -680,3 +680,126 @@ ae_val <- function(ae_table, treatment, value){
     )
   res
 }
+
+#' Compute weighted drug cost over a distribution of characteristics
+#'
+#' @param dist distribution for the dose-determining variable
+#' @param params arguments for the quantile function for `dist`
+#' @param var_base see details
+#' @param dose_base see details
+#' @param dose_multiplier see details
+#' @param vialCosts 
+#' @param subset_col optionally, a subset to select on in vialCosts
+#' @param subset_val if `subset_col` exists, the value to select
+#' @param share_vials should vials be shared (or, looked at from the 
+#'    other side, should any drug be allowed to go unused?)
+#' @param qmin,qmax,by determine the sequence of quantiles of the variable
+#'   at which the dose function will be evaluated
+#'
+#' @details 
+#' Typical use for these functions are when dose varies by some
+#'   patient characteristic, for example weight or body surface area.
+#'   
+#' The general formula is 
+#'   dose = base_dose + dose_multiplier * pmax(0, var - var_base),
+#' and the number of vials is then computed using 
+#' [find_least_cost_partition()].
+#' 
+#' Changing the percentiles at which the doses are calculated by
+#' changing `qmin`, `qmax`, and `by` will produce slightly different
+#' values, but the values will converge if 
+#' 
+#' The functions [weighted_norm_dose_costs()] and 
+#' [weighted_lognorm_dose_costs()] are provided to cover two common cases.
+#' @return the weighted dose cost
+#' @export
+#'
+#' @examples
+weighted_dose_costs <- function(dist, params, var_base, dose_base,
+                                dose_multiplier, vialCosts, subset_col, subset_val,
+                                share_vials,
+                                qmin = 0.01, qmax = 0.99, by = 0.01){
+  qfn <- paste("q", dist, sep = "")
+  if(qmin <= 0)
+    stop("it does not make sense for 'qmin' to be <= 0")
+  if(qmax >= 1)
+    stop("it does not make sense for 'qmax' to be >= 1")
+  prob_pts <- seq(from = qmin, to = qmax, by = by)
+  formal_args <- setdiff(names(formals(qfn)), c("p", "lower.tail", "log.p"))
+  missing_args <- setdiff(formal_args, names(params))
+  extra_args <- setdiff(names(params), formal_args)
+  if(length(missing_args) | length(extra_args))
+    stop("mismatched arguments for function '",
+         qfn,
+         "':\n",
+         ifelse(length(missing_args), 
+                paste("missing args: ", 
+                      paste(missing_args, collapse = ", "),
+                      ";\n"),
+                ""),
+         ifelse(length(extra_args),
+                paste("unused arguments: ",
+                      paste(extra_args, collapse = ", "),
+                      ";\n"),
+                "")
+         )
+  arg_list <- c(params, p = list(prob_pts))
+  quantiles <- do.call(qfn, arg_list)
+  dose <- dose_base + pmax(0, (quantiles - var_base) * dose_multiplier)
+  costs <- find_least_cost_partition(dose, vialCosts, subset_col = subset_col, subset_val = subset_val)
+  if(share_vials) 
+    costs <- costs$cost.no.waste
+  else 
+    costs <- costs$cost 
+  sum(costs)/length(prob_pts)
+}
+
+#' @rdname weighted_dose_costs
+#' @param mean mean of normal distribution
+#' @param sd sd of normal distribution
+#' @export
+#' vialCost <- data.frame(treatment = "fake", 
+#'                       size = c(50, 250), 
+#'                       cost = c(2521, 12297)
+#'                       )
+#' weighted_norm_dose_costs(1.85, 0.25, 
+#'                          var_base = 0, dose_base = 0, 
+#'                          dose_multiplier = 320, vialCost, "treatment", "fake",
+#'                          share_vials = FALSE)
+#' 
+weighted_norm_dose_costs <- function(mean, sd, var_base, dose_base, 
+                                     dose_multiplier, vialCosts, subset_col, subset_val,
+                                     share_vials,
+                                     qmin = 0.01, qmax = 0.99, by = 0.01){
+  
+weighted_dose_costs("norm", params = list(mean = mean, sd = sd),
+                      var_base, dose_base, dose_multiplier, 
+                      vialCosts, subset_col, subset_val,
+                      share_vials = share_vials,
+                      qmin, qmax, by)
+}
+
+#' @rdname weighted_dose_costs
+#' @param meanlog mean of lognormal distribution
+#' @param sdlog sd of lognormal distribution
+#' @export
+#' vialCost <- data.frame(treatment = "fake", size = 50, cost = 1000)
+#' weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
+#'                             var_base = 50, dose_base = 100, 
+#'                             dose_multiplier = 2, vialCost, "treatment", "fake",
+#'                             share_vials = FALSE)
+#' weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
+#'                             var_base = 50, dose_base = 100, 
+#'                             dose_multiplier = 2, vialCost, "treatment", "fake",
+#'                             share_vials = TRUE)
+
+weighted_lognorm_dose_costs <- function(meanlog, sdlog, var_base, dose_base, 
+                                        dose_multiplier, vialCosts, subset_col, subset_val,
+                                        share_vials,
+                                        qmin = 0.01, qmax = 0.99, by = 0.01){
+  weighted_dose_costs("lnorm", params = list(meanlog = meanlog, sdlog = sdlog),
+                      var_base, dose_base, dose_multiplier, 
+                      vialCosts, subset_col, subset_val,
+                      share_vials = share_vials, qmin, qmax, by)
+}
+
