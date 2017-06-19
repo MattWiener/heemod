@@ -10,7 +10,8 @@ find_least_cost_partition(desired_dose, available_units, subset_col = NULL,
 \arguments{
 \item{desired_dose}{the dose(s) required.}
 
-\item{available_units}{available sizes and costs.}
+\item{available_units}{available sizes and costs; must have column names
+'size' and 'cost'}
 
 \item{subset_col}{optionally, a column to select on.}
 

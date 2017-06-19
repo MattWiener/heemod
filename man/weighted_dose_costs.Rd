@@ -7,15 +7,15 @@
 \title{Compute weighted drug cost over a distribution of characteristics}
 \usage{
 weighted_dose_costs(dist, params, var_base, dose_base, dose_multiplier,
-  vialCosts, subset_col, subset_val, share_vials, qmin = 0.01, qmax = 0.99,
-  by = 0.01)
+  available_units, subset_col, subset_val, share_vials, qmin = 0.01,
+  qmax = 0.99, by = 0.01)
 
 weighted_norm_dose_costs(mean, sd, var_base, dose_base, dose_multiplier,
-  vialCosts, subset_col, subset_val, share_vials, qmin = 0.01, qmax = 0.99,
-  by = 0.01)
+  available_units, subset_col, subset_val, share_vials, qmin = 0.01,
+  qmax = 0.99, by = 0.01)
 
 weighted_lognorm_dose_costs(meanlog, sdlog, var_base, dose_base,
-  dose_multiplier, vialCosts, subset_col, subset_val, share_vials,
+  dose_multiplier, available_units, subset_col, subset_val, share_vials,
   qmin = 0.01, qmax = 0.99, by = 0.01)
 }
 \arguments{
@@ -29,9 +29,10 @@ weighted_lognorm_dose_costs(meanlog, sdlog, var_base, dose_base,
 
 \item{dose_multiplier}{see details}
 
-\item{vialCosts}{}
+\item{available_units}{available sizes and costs; must have column names
+'size' and 'cost'}
 
-\item{subset_col}{optionally, a subset to select on in vialCosts}
+\item{subset_col}{optionally, a subset to select on in available_units}
 
 \item{subset_val}{if \code{subset_col} exists, the value to select}
 
@@ -70,4 +71,34 @@ values, but the values will converge if
 
 The functions \code{\link[=weighted_norm_dose_costs]{weighted_norm_dose_costs()}} and
 \code{\link[=weighted_lognorm_dose_costs]{weighted_lognorm_dose_costs()}} are provided to cover two common cases.
+}
+\examples{
+vialCost <- data.frame(treatment = "fake", 
+                      size = c(50, 250), 
+                      cost = c(2521, 12297)
+                      )
+weighted_dose_costs("norm", params = c(mean = 1.85, sd = 0.25),
+                    var_base = 0, 
+                    dose_base = 0, 
+                    dose_multiplier = 320, 
+                    vialCost, "treatment", "fake",
+                    share_vials = FALSE)
+vialCost <- data.frame(treatment = "fake", 
+                      size = c(50, 250), 
+                      cost = c(2521, 12297)
+                      )
+weighted_norm_dose_costs(1.85, 0.25, 
+                         var_base = 0, dose_base = 0, 
+                         dose_multiplier = 320, vialCost, "treatment", "fake",
+                         share_vials = FALSE)
+
+vialCost <- data.frame(treatment = "fake", size = 50, cost = 1000)
+weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
+                            var_base = 50, dose_base = 100, 
+                            dose_multiplier = 2, vialCost, "treatment", "fake",
+                            share_vials = FALSE)
+weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
+                            var_base = 50, dose_base = 100, 
+                            dose_multiplier = 2, vialCost, "treatment", "fake",
+                            share_vials = TRUE)
 }
