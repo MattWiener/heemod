@@ -12,9 +12,9 @@ test_that("functions for AE values work",
             )
             
             res1 <- compute_vals_for_adv_ev(AEs)
-            correct <- tibble::tribble(~ treatment, ~ cost, ~ disutility,
-                                       "A", 30, 1 / 100,
-                                       "B", 20, 0)
+            correct <- tibble::tribble( ~ treatment, ~ cost, ~ disutility,
+                                        "A", 30, 1 / 100,
+                                        "B", 20, 0)
             expect_equivalent(as.data.frame(res1),
                               as.data.frame(correct))
             expect_error(compute_vals_for_adv_ev(AEs[, c("treatment", "ae",
@@ -48,9 +48,9 @@ test_that("functions for AE values work",
                          "no AE information returned")
             expect_error(ae_val(AEs, "A", "novalue"),
                          "no column")
-
+            
             AEs5 <- AEs
-            AEs5$cost[c(3,4)] <- NA
+            AEs5$cost[c(3, 4)] <- NA
             expect_equal(ae_val(AEs5, "A", "cost"), 30)
             expect_equal(ae_val(AEs5, "B", "cost"), 20)
             expect_equal(ae_val(AEs5, "A", "disutility"), 0.01)
@@ -180,48 +180,50 @@ test_that("utility by time before death",
                                                 state_names == "Death")$count)[-1])
             
             ## catch the error if not all the subjects die
-            restricted_counts <- dplyr::filter_(counts, ~markov_cycle <= 15)
+            restricted_counts <- dplyr::filter_(counts, ~ markov_cycle <= 15)
             class(restricted_counts) <- c("cycle_counts", "data.frame")
             expect_error(
-              utility_by_time_from_death(restricted_counts,
-                                         util_before_death = aa2,
-                                         util_long_before_death = 0),
+              utility_by_time_from_death(
+                restricted_counts,
+                util_before_death = aa2,
+                util_long_before_death = 0
+              ),
               "not all subjects reach the death state"
             )
             
-            ## we should be able to replace util_long_before_death by 
+            ## we should be able to replace util_long_before_death by
             ##  having a long lag time with the same utility.
             ## check once defining times longer than number of cycles
             
-            util_df_1 <- data.frame(until_lag = c(4, 13, 26, 39, 52), 
+            util_df_1 <- data.frame(until_lag = c(4, 13, 26, 39, 52),
                                     util = c(.2, .3, .4, .5, .6))
             util_df_2 <- rbind(util_df_1,
                                c(until_lag = 1000, util = 0.7))
-            res_1 <- 
+            res_1 <-
               utility_by_time_from_death(counts,
                                          util_before_death = util_df_1,
                                          util_long_before_death = 0.7)
-            res_2 <- 
+            res_2 <-
               utility_by_time_from_death(counts,
                                          util_before_death = util_df_2,
                                          util_long_before_death = 0)
             expect_equal(res_1, res_2)
             
-            util_df_1 <- data.frame(until_lag = c(2, 4, 6, 8, 10), 
+            util_df_1 <- data.frame(until_lag = c(2, 4, 6, 8, 10),
                                     util = c(.2, .3, .4, .5, .6))
             util_df_2 <- rbind(util_df_1,
                                c(until_lag = 1000, util = 0.7))
-            res_1 <- 
+            res_1 <-
               utility_by_time_from_death(counts,
                                          util_before_death = util_df_1,
                                          util_long_before_death = 0.7)
-            res_2 <- 
+            res_2 <-
               utility_by_time_from_death(counts,
                                          util_before_death = util_df_2,
                                          util_long_before_death = 0)
             expect_equal(res_1, res_2)
             
-
+            
           })
 
 test_that("finding least-cost combination of vials for a dose works",
@@ -252,12 +254,14 @@ test_that("finding least-cost combination of vials for a dose works",
                 cost.no.waste = 5373.64
               )
             )
-
+            
             expect_equal(
-              find_least_cost_partition(c(214.3, 200),
-                                        units,
-                                        subset_col = "trt",
-                                        subset_val = "fake"),
+              find_least_cost_partition(
+                c(214.3, 200),
+                units,
+                subset_col = "trt",
+                subset_val = "fake"
+              ),
               data.frame(
                 desired_dose = c(214.3, 200),
                 used_dose = c(220, 200),
@@ -408,103 +412,255 @@ test_that("intravenous dosing cost function works",
 
 test_that("getting weighted costs works",
           {
-      vialCost <- data.frame(treatment = "fake", size = 50, cost = 1000)
-      expect_equal(weighted_dose_costs("lnorm", 
-                                       params = c(meanlog = 4.3423559, 
-                                                  sdlog = 0.2116480), 
-                                       var_base = 50, 
-                                       dose_base = 100, 
-                                       dose_multiplier = 2, 
-                                       available_units = vialCost, 
-                                       subset_col = "treatment", 
-                                       subset_val = "fake",
-                                       share_vials = FALSE),
-                   weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
-                                               var_base = 50, 
-                                               dose_base = 100, 
-                                               dose_multiplier = 2,
-                                               available_units = vialCost, 
-                                               subset_col = "treatment", 
-                                               subset_val = "fake",
-                                               share_vials = FALSE)
-            )
-            expect_equal(round(weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
-                                        var_base = 50, dose_base = 100, 
-                                        dose_multiplier = 2, available_units = vialCost, 
-                                        "treatment", "fake",
-                                        share_vials = FALSE), 2),
-                         3636.36)
-            expect_equal(round(weighted_lognorm_dose_costs(4.3423559, 0.2116480, 
-                                                           var_base = 50, dose_base = 100, 
-                                                           dose_multiplier = 2, 
-                                                           available_units = vialCost, "treatment", "fake",
-                                                           share_vials = TRUE), 2),
-                         3140.94)
             vialCost <- data.frame(treatment = "fake",
-                                   size = c(50, 250),
-                                   cost = c(2521, 12297)
-                                   )
-            expect_equal(round(weighted_norm_dose_costs(1.85, 0.25, 
-                                                           var_base = 0, dose_base = 0, 
-                                                           dose_multiplier = 320, 
-                                                        available_units = vialCost, "treatment", "fake",
-                                                           share_vials = FALSE), 2),
-                         30511.71
-                         )
-            expect_equal(weighted_dose_costs("norm", params = c(mean = 1.85, sd = 0.25),
-                                             var_base = 0, 
-                                             dose_base = 0, 
-                                             dose_multiplier = 320, 
-                                             available_units = vialCost, 
-                                             "treatment", "fake",
-                                             share_vials = FALSE),
-                         weighted_norm_dose_costs(1.85, 0.25, 
-                                                  var_base = 0, dose_base = 0, 
-                                                  dose_multiplier = 320, 
-                                                  available_units = vialCost, 
-                                                  "treatment", 
-                                                  "fake",
-                                                  share_vials = FALSE)
+                                   size = 50,
+                                   cost = 1000)
+            expect_equal(
+              weighted_dose_costs(
+                "lnorm",
+                params = c(meanlog = 4.3423559,
+                           sdlog = 0.2116480),
+                var_base = 50,
+                dose_base = 100,
+                dose_multiplier = 2,
+                available_units = vialCost,
+                subset_col = "treatment",
+                subset_val = "fake",
+                share_vials = FALSE
+              ),
+              weighted_lognorm_dose_costs(
+                4.3423559,
+                0.2116480,
+                var_base = 50,
+                dose_base = 100,
+                dose_multiplier = 2,
+                available_units = vialCost,
+                subset_col = "treatment",
+                subset_val = "fake",
+                share_vials = FALSE
+              )
             )
-                         
-            expect_error(weighted_norm_dose_costs(1.85, 0.25, 
-                                                  var_base = 0, dose_base = 0, 
-                                                  dose_multiplier = 320, 
-                                                  available_units = vialCost, 
-                                                  "treatment", "fake",
-                                                  share_vials = FALSE,
-                                                  qmin = 0, qmax = 0.99, by = 0.01),
-                         "it does not make sense for 'qmin' to be <= 0",
-                         fixed = TRUE
-                         )
-            expect_error(weighted_norm_dose_costs(1.85, 0.25, 
-                                                  var_base = 0, dose_base = 0, 
-                                                  dose_multiplier = 320, 
-                                                  available_units = vialCost, 
-                                                  "treatment", "fake",
-                                                  share_vials = FALSE,
-                                                  qmin = 0.01, qmax = 1, by = 0.01),
-                         "it does not make sense for 'qmax' to be >= 1",
-                         fixed = TRUE
+            expect_equal(round(
+              weighted_lognorm_dose_costs(
+                4.3423559,
+                0.2116480,
+                var_base = 50,
+                dose_base = 100,
+                dose_multiplier = 2,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = FALSE
+              ),
+              2
+            ),
+            3636.36)
+            expect_equal(round(
+              weighted_lognorm_dose_costs(
+                4.3423559,
+                0.2116480,
+                var_base = 50,
+                dose_base = 100,
+                dose_multiplier = 2,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = TRUE
+              ),
+              2
+            ),
+            3140.94)
+            vialCost <- data.frame(
+              treatment = "fake",
+              size = c(50, 250),
+              cost = c(2521, 12297)
             )
-            expect_error(weighted_norm_dose_costs(1.85, 0.25, 
-                                                  var_base = 0, dose_base = 0, 
-                                                  dose_multiplier = 320, 
-                                                  available_units = vialCost, 
-                                                  "treatment", "fake",
-                                                  share_vials = FALSE,
-                                                  qmin = 0.01, qmax = 0.99, by = -0.01),
-                         "wrong sign in 'by' argument",
-                         fixed = TRUE
-            )
-            expect_error(weighted_dose_costs("norm", params = c(MEAN = 1.85, sd = 0.25), 
-                                             var_base = 0, dose_base = 0, 
-                                             dose_multiplier = 320, 
-                                             available_units = vialCost, 
-                                             "treatment", "fake",
-                                             share_vials = FALSE),
-                         "mismatched arguments for function 'qnorm'",
-                         fixed = TRUE
+            expect_equal(round(
+              weighted_norm_dose_costs(
+                1.85,
+                0.25,
+                var_base = 0,
+                dose_base = 0,
+                dose_multiplier = 320,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = FALSE
+              ),
+              2
+            ),
+            30511.71)
+            expect_equal(
+              weighted_dose_costs(
+                "norm",
+                params = c(mean = 1.85, sd = 0.25),
+                var_base = 0,
+                dose_base = 0,
+                dose_multiplier = 320,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = FALSE
+              ),
+              weighted_norm_dose_costs(
+                1.85,
+                0.25,
+                var_base = 0,
+                dose_base = 0,
+                dose_multiplier = 320,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = FALSE
+              )
             )
             
+            expect_error(
+              weighted_norm_dose_costs(
+                1.85,
+                0.25,
+                var_base = 0,
+                dose_base = 0,
+                dose_multiplier = 320,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = FALSE,
+                qmin = 0,
+                qmax = 0.99,
+                by = 0.01
+              ),
+              "it does not make sense for 'qmin' to be <= 0",
+              fixed = TRUE
+            )
+            expect_error(
+              weighted_norm_dose_costs(
+                1.85,
+                0.25,
+                var_base = 0,
+                dose_base = 0,
+                dose_multiplier = 320,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = FALSE,
+                qmin = 0.01,
+                qmax = 1,
+                by = 0.01
+              ),
+              "it does not make sense for 'qmax' to be >= 1",
+              fixed = TRUE
+            )
+            expect_error(
+              weighted_norm_dose_costs(
+                1.85,
+                0.25,
+                var_base = 0,
+                dose_base = 0,
+                dose_multiplier = 320,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = FALSE,
+                qmin = 0.01,
+                qmax = 0.99,
+                by = -0.01
+              ),
+              "wrong sign in 'by' argument",
+              fixed = TRUE
+            )
+            expect_error(
+              weighted_dose_costs(
+                "norm",
+                params = c(MEAN = 1.85,
+                           sd = 0.25),
+                var_base = 0,
+                dose_base = 0,
+                dose_multiplier = 320,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = FALSE
+              ),
+              "mismatched arguments for function 'qnorm'",
+              fixed = TRUE
+            )
+          })
+
+test_that("cost_iv_compound_administration works",
+          {
+            exampleParams <-
+              data.frame(
+                compound = "X",
+                param = c("cost_admin_first_hr", "cost_admin_addl_hr",
+                          "iv_time_hr"),
+                value = c(100, 20, 1.5)
+              )
+            expect_equal(cost_iv_compound_administration(exampleParams, "X"),
+                         110)
+            exampleParams <-
+              data.frame(
+                compound = "X",
+                param = c("cost_admin_first_hr", "cost_admin_addl_hr",
+                          "iv_time_hr"),
+                value = c(100, 20, 0.75)
+              )
+            expect_equal(cost_iv_compound_administration(exampleParams, "X",
+                                                         prorate_first = TRUE),
+                         75)
+            expect_equal(cost_iv_compound_administration(exampleParams, "X",
+                                                         prorate_first = FALSE),
+                         100)
+            expect_error(
+              cost_iv_compound_administration(exampleParams, "Y"),
+              "Y not present in 'compound' column of data_table",
+              fixed = TRUE
+            )
+            expect_error(
+              cost_iv_compound_administration(exampleParams, "X",
+                                              time_col = "iv_time_min"),
+              "parameter iv_time_min not in data_table",
+              fixed = TRUE
+            )
+          })
+
+test_that("linear interpolation function works",
+          {
+            fn1 <- linear_interpolation(c(1, 10, 20), c(1, .5, .25))
+            expect_equal(fn1(c(1, 5.5, 10, 11, 15, 20, 25)),
+                         c(1, 0.75, 0.5, 0.475, 0.375, 0.25, 0.25))
+            fn2 <-
+              linear_interpolation(change_per_cycle = -0.02,
+                                   max_change_cycles = 50)
+            expect_equal(fn2(c(1, 20, 50, 51)),
+                             c(0.98, 0.60, 0.00, 0.00))
+            fn3 <-
+              linear_interpolation(
+                change_per_cycle = -0.02,
+                max_change_cycles = 100,
+                min_val = -0.8
+              )
+            expect_equal(fn3(
+              c(1, 20, 50, 51, 69, 70, 71, 100, 150)),
+              c(0.98, 0.60, 0.00,-0.02,-0.38,-0.40,-0.42,-0.80,-0.80)
+            )
+            fn4 <-
+              linear_interpolation(
+                age_start_change_per_cycle = 65,
+                age_at_cycle_0 = 60,
+                change_per_cycle = -0.05,
+                cycles = 1:15,
+                max_change_cycles = 5
+              )
+            expect_equal(fn4, c(rep(1, 6),
+                                0.95, 0.9, 0.85, 0.8,
+                                rep(0.75, 5)))
+            expect_error(
+              linear_interpolation(c(1, 10, 20), c(1, .5, .25, 0.1)),
+              "marked_cycles and marked_values must have the same length"
+            )
+            expect_error(
+              linear_interpolation(max_change_cycles = 5),
+              "either marked_cycles and marked_values or change_per_cycle"
+            )
           })
