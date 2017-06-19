@@ -235,6 +235,7 @@ define_wtd_surv_table.data.frame <- function(x, time_col, weights, by_age){
   if(any(missing_cols))
     stop("column",
          plur(sum(missing_cols)),
+         " ",
          paste(other_cols[missing_cols], collapse = " ,"),
          " specified in weights but not present in table"
          )

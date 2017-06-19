@@ -397,6 +397,7 @@ test_that(
     expect_equal(surv5_surv, fs5_surv, tolerance=1E-4)
     expect_equal(surv5_prob, fs5_prob, tolerance=1E-4)
     
+    ## defining survival object from a survival table
     bad_surv_table_df <- data.frame(time = c(0, 1, 5, 10),
                                   survival = c(1, 0.9, 0.5, 0.6))
     expect_error(define_surv_table(bad_surv_table_df),
@@ -435,8 +436,120 @@ test_that(
                  c(1, 0.9, 0.9, 0.7, 0.4))
     reg2 <- define_surv_table(system.file("tabular/surv/surv_table.csv", package = "heemod"))
     expect_identical(reg, reg2)
+    
+    ## weighted survival tables
+    test_data <- 
+      data.frame(age = 49:55,
+                 group1 = c(1, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2),
+                 group2 = c(1, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55)
+                 )
+    wtd_surv_table <- define_wtd_surv_table(test_data,
+                                            time_col = "age",
+                                            weights = c(group1 = 0.5, group2 = 0.5),
+                                            by_age = TRUE)
+    expect_error(suppressWarnings(define_wtd_surv_table(test_data,
+                                         time_col = "age",
+                                         weights = c(group1 = 0.5, group2 = 0.5),
+                                         by_age = FALSE)
+                                   ),
+                 "surv_table data must start with time 0 (unless by_age is TRUE)",
+                 fixed = TRUE
+    )
+    expect_error(define_wtd_surv_table(test_data,
+                                         time_col = "time",
+                                         weights = c(group1 = 0.5, group2 = 0.5),
+                                         by_age = FALSE),
+                   "column 'time' not in table"
+    )
+    expect_error(define_wtd_surv_table(test_data,
+                                       time_col = "age",
+                                       weights = c(group1 = 0.5, group3 = 0.5),
+                                       by_age = TRUE),
+                 "column group3 specified in weights but not present in table"
+    )
+    
   }
 )
+
+test_that("age_to_time",
+          {
+            test_data <- 
+              data.frame(age = 49:55,
+                         group1 = c(1, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2),
+                         group2 = c(1, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55)
+              )
+            wtd_surv_table <- 
+              define_wtd_surv_table(test_data,
+                                    time_col = "age",
+                                    weights = c(group1 = 0.25, group2 = 0.75),
+                                    by_age = TRUE)
+            wtd_time_table <- 
+              age_to_time(wtd_surv_table, age_init = 49, cycle_length = 1)
+
+            group1_table <- test_data[, -3]
+            group3_table <- test_data[, -2]
+            
+            expect_error(define_surv_table(group1_table, by_age = TRUE),
+                         "missing columns in surv_table object: time, survival",
+                         fixed = TRUE
+            )
+            names(group1_table) <- names(group3_table) <- c("time", "survival")
+            surv_table_group1 <- define_surv_table(group1_table,
+                                                   by_age = TRUE)
+            surv_table_group3 <- define_surv_table(group3_table,
+                                                   by_age = TRUE)
+            expect_equal(suppressWarnings(
+              compute_surv(surv_table_group1, time = 1:5)),
+                         rep(as.numeric(NA), 5)
+                         )
+            time_table_group1 <- age_to_time(surv_table_group1, 
+                                             age_init = 49, cycle_length = 1)
+            time_table_group3 <- age_to_time(surv_table_group3, 
+                                             age_init = 49, cycle_length = 1)
+            
+            ## years to weeks
+            wtd_surv_table <- define_wtd_surv_table(test_data,
+                                                    time_col = "age",
+                                                    weights = c(group1 = 0.5, group2 = 0.5),
+                                                    by_age = TRUE)
+            wtd_time_table_years <-
+              age_to_time(wtd_surv_table, age_init = 49, cycle_length = 1)
+            wtd_time_table_weeks <- 
+              age_to_time(wtd_surv_table, age_init = 49, cycle_length = 1/52)
+          
+            expect_equal(
+              compute_surv(wtd_time_table_years, 1:5, type = "survival"),
+              compute_surv(wtd_time_table_weeks, time = 1:(52 * 5), 
+                           type = "survival")[1:5 * 52]
+            ) 
+            expect_error(age_to_time(group1_table),
+                         "no applicable method"
+                         )
+            expect_error(age_to_time(NULL, age_init = 49, cycle_length = 1),
+                         "no applicable method"
+                         )
+            expect_error(age_to_time(surv_table_group1, age_init = 49),
+                         'argument "cycle_length" is missing, with no default'
+                         )
+            expect_error(age_to_time(surv_table_group1, cycle_length = 1),
+                         'argument "age_init" is missing, with no default'
+                         )
+            expect_error(age_to_time(surv_table_group1, age_init = -49, 
+                                     cycle_length = 1),
+                         "negative age makes no sense"
+            )
+            expect_error(age_to_time(surv_table_group1, age_init = 49, 
+                                     cycle_length = -1),
+                         "zero or negative cycle length makes no sense"
+            )
+            expect_error(age_to_time(surv_table_group1, age_init = 49, 
+                                     cycle_length = 0),
+                         "zero or negative cycle length makes no sense"
+            )
+            
+            }
+          )
+
 
 test_that(
   "Survfit",

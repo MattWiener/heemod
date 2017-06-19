@@ -5,7 +5,6 @@
 \alias{age_to_time.surv_table}
 \alias{age_to_time.surv_object}
 \alias{age_to_time.surv_pooled}
-\alias{age_to_time.default}
 \title{Convert an age-based table to a cycle-based table}
 \usage{
 age_to_time(x, age_init, cycle_length)
@@ -15,8 +14,6 @@ age_to_time(x, age_init, cycle_length)
 \method{age_to_time}{surv_object}(x, age_init, cycle_length)
 
 \method{age_to_time}{surv_pooled}(x, age_init, cycle_length)
-
-\method{age_to_time}{default}(x, age_init, cycle_length)
 }
 \arguments{
 \item{x}{a survival object}

@@ -16,6 +16,9 @@ for the usual summary of a \code{survfit} object,
 
 \item{...}{other arguments}
 }
+\value{
+a data frame with columns time, est, lcl, ucl
+}
 \description{
 Summarize surv_shift objects
 }

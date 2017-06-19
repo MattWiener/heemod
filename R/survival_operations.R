@@ -468,7 +468,7 @@ plot.surv_shift <- plot.surv_obj
 #'   "plot" for a fuller version
 #' @param ... other arguments
 #' 
-#' @return
+#' @return a data frame with columns time, est, lcl, ucl
 #'
 summary.surv_shift <- 
   function(object, summary_type = c("plot", "standard"), ...){
@@ -548,11 +548,12 @@ age_to_time <- function(x, age_init, cycle_length){
 #' @rdname age_to_time
 #' @export
 age_to_time.surv_table <- function(x, age_init, cycle_length){
-  
-  if(!exists("age_init"))
-    stop("argument 'age_init' must be supplied.")
-  if(!exists("cycle_length"))
-    stop("argument 'cycle_length' must be supplied.")
+  if(!inherits(x, "data.frame"))
+    stop("first argument must be a data frame.")
+  if(!("time" %in% names(x)))
+    stop("'time' must be one of the names of the first argument.")
+  if(!("survival" %in% names(x)))
+    stop("'survival' must be one of the names of the first argument.")
   if(age_init < 0)
     stop("age_init has value ",
          age_init,
@@ -570,7 +571,7 @@ age_to_time.surv_table <- function(x, age_init, cycle_length){
   evenly_spaced_hazard <- 
     stats::approx(x$time, log(x$survival),
          xout = new_time)
-  res <- data.frame(time = seq(along = new_time), 
+  res <- data.frame(time = seq(along = new_time) - 1, 
                     survival = exp(evenly_spaced_hazard$y))
   class(res) <- class(x)
   res
@@ -596,10 +597,3 @@ age_to_time.surv_pooled <-
     x
   }
 
-#' @rdname age_to_time
-#' @export
-age_to_time.default <- 
-  function(x, age_init, cycle_length) 
-    {
-    x
-    }
