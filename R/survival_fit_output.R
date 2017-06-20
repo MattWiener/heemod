@@ -96,40 +96,23 @@ write_fits_to_excel_from_tibble <-
     
     flexspace <- loadNamespace("flexsurv")
     ## need to know how many rows of output we're going to write
-    num_rows <- sum(sapply(fit_tibble_nest[[1, "data"]]$dist, 
-                             function(x){
-                               length(formals(get(paste("r", x, 
-                                                        sep = ""),
-                                                  envir = flexspace)))
-                               }
-                             )
-                      )
-    
-    num_rows_2 <- 
+    num_rows <- 
       sapply(fit_tibble_nest$data, function(x){
         1 + sum(sapply(x$fit, function(y){1 + length(coef(y))}))
       })
     
     if(alignment == "vertical"){
-    rows_per <- 2 * (num_rows + skip_between) + 
-      nrow(fit_tibble_nest[[1, "data"]]) + 1
-    rows_per_2 <- 
-      2 * (num_rows_2 + skip_between) + 
+    rows_per <- 
+      2 * (num_rows + skip_between) + 
         sapply(fit_tibble_nest$data, nrow) + 1
     }
     if(alignment == "horizontal"){
       rows_per <- 
-        num_rows + 
-          skip_between + nrow(fit_tibble_nest[[1, "data"]]) + 1
-      rows_per_2 <- 
-        num_rows_2 + skip_between + sapply(fit_tibble_nest$data, nrow) + 1
+        num_rows + skip_between + sapply(fit_tibble_nest$data, nrow) + 1
     }
-    fit_tibble_nest$start_row <- skip_at_start + 1 + 
-      rows_per * (1:nrow(fit_tibble_nest) - 1)
-    fit_tibble_nest$start_row_2 <- 
-      skip_at_start + 1 + cumsum(rows_per_2) - rows_per_2[1]
-      ## rows_per_2 * (1:nrow(fit_tibble_nest) - 1)
-    
+    fit_tibble_nest$start_row <- 
+      skip_at_start + 1 + cumsum(rows_per) - rows_per[1]
+
     
     fit_tibble_nest <-
       fit_tibble_nest %>%
@@ -186,7 +169,7 @@ send_info_to_workbook <-
   
   fit_list <- fit_tib[[1, "data"]][["fit"]]
   names(fit_list) <- fit_tib[[1, "data"]][["dist"]]
-  start_row <- fit_tib[[1, "start_row_2"]]
+  start_row <- fit_tib[[1, "start_row"]]
   dist_names <- names(fit_list)
   fit_info <- prepare_fit_info(fit_list)
   
@@ -342,6 +325,7 @@ summary_helper <- function(fit_holder, type, ...){
 #' @param km_width width for the Kaplan-Meier curve line;
 #'   approximately 0.5 seems to be the standard width for lines
 #' @param label_size relative multiplier for label size.
+#' @param silence_warnings suppresses certain warnings
 #' @return a `ggplot2` plot object
 #' @export
 #'
@@ -359,10 +343,11 @@ plot_fit_data <- function(data_to_plot,
                           legend_loc = "right",
                           logy = NULL, 
                           km_width = 1.25,
-                          label_size = 1.25){
+                          label_size = 1.25,
+                          silence_warnings = FALSE){
   if(length(unique(data_to_plot$type)) > 1)
     warning("more than one type in plotting data - could cause problems")
-  if(length(unique(data_to_plot$treatment)) > 1)
+  if(length(unique(data_to_plot$treatment)) > 1 & !silence_warnings)
     warning("more than one treatment in plotting data - could cause problems")
   if(length(unique(data_to_plot$set_name)) > 1)
     warning("more than one subset name in plotting data - could cause problems")
@@ -617,6 +602,7 @@ plot_cloglog_fit_tibble <-
                     plot_type = "log cumulative hazard",
                     groups = "treatment",
                     time_label = "time (log scale)",
+                    silence_warnings = TRUE,
                     ...)
     res_cloglog <- 
       res_cloglog + ggplot2::geom_hline(yintercept = 1,

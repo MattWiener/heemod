@@ -299,13 +299,22 @@ test_that("fitting works (including with subsets)",
                              )
             )
             expect_error(
-              heemod:::survival_from_data(location = location,
+              suppressWarnings(heemod:::survival_from_data(location = location,
                                           survival_specs = ok_surv_info,
                                           dists = c("exp", "weibull"),
                                           save_fits = FALSE,
-                                          set_definitions = "set_def_pfs_os_error.csv"),
+                                          set_definitions = "set_def_pfs_os_error.csv")),
               "1 '0' value"
               )
+            expect_error(
+              suppressWarnings(heemod:::survival_from_data(location = location,
+                                          survival_specs = ok_surv_info,
+                                          dists = c("exp", "weibull"),
+                                          save_fits = FALSE,
+                                          set_definitions = "set_def_pfs_os_error_2.csv")),
+              "negative value"
+            )
+            
           }
           )
 

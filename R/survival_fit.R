@@ -310,133 +310,135 @@ survival_from_data <-
   }
 
 
-get_set_definitions <- function(data_dir, file_name = "set_definitions"){
-  set_definitions <- data.frame(treatment = character(0), 
-                                set_name = character(0),
-                                condition = character(0))
-  set_definition_file_name <- 
-    list.files(data_dir, pattern = file_name, full.names = TRUE)
-  if(length(set_definition_file_name) > 1)
-    stop("multiple files matching set_definition file name")
-  if(length(set_definition_file_name) == 1)
-    set_definitions <- read_file(set_definition_file_name)
-  missing_names <- setdiff(c("treatment", "set_name", "condition"),
-                        names(set_definitions))
-  extra_names <- setdiff(names(set_definitions),
-                         c("treatment", "set_name", 
-                           "condition", "time_subtract"))
-  extra_names <- extra_names[!grep("^.comment", extra_names)]
-  if(length(missing_names) > 0)
-    stop("set_definitions file missing column(s): ",
-         paste(missing_names, collapse = ", ")
-         )
-  if(length(extra_names) > 0)
-    stop("unrecognized column name(s): ",
-         paste(extra_names, collapse = ", ")
-         )
-  ## just in case we have only logicals
-  set_definitions$condition <- as.character(set_definitions$condition)
-
-  if(!("time_subtract" %in% names(set_definitions))){
-    set_definitions <- dplyr::mutate_(set_definitions, time_subtract = 0)
-  }
-  else{
-    neg_offset <- which(set_definitions$time_subtract < 0)
-    if(length(neg_offset))
-      stop("bad offset in set_definitions line(s) ",
-           paste(neg_offset, collapse = ", ")
-      )
-    
-   ## check whether time_subtracts match numbers in conditions,
-    ##  warning if not
-    time_matches_condition <- 
-      sapply(1:nrow(set_definitions), 
-             function(i){
-               if(is.na(set_definitions$time_subtract[i]))
-                 TRUE
-               else
-                grepl(set_definitions$time_subtract[i], 
-                      set_definitions$condition[i]
-                      )
-      }
+get_set_definitions <-
+  function(data_dir, file_name = "set_definitions") {
+    set_definitions <- data.frame(
+      treatment = character(0),
+      set_name = character(0),
+      condition = character(0)
     )
-    problem_conditions <- which(!time_matches_condition)
-    if(length(problem_conditions)){
-      bad_conds <- 
-        sapply(problem_conditions, function(this_row){
-                   paste(this_row, 
-                         set_definitions$condition[this_row],
-                         set_definitions$time_subtract[this_row],
-                         sep = "\t"
-                        )
-      }
-      )
-      message <- 
-        paste("\n",
-              bad_conds,
-              "\n",
-              "value of 'time_subtract' does not appear in 'condition' for row",
-              plur(length(problem_conditions)),
-              " ", 
-              paste(problem_conditions, collapse = ", "),
-              " in set_definitions",
-              "\n",
-              sep = ""
-              )
+    set_definition_file_name <-
+      list.files(data_dir, pattern = file_name, full.names = TRUE)
+    if (length(set_definition_file_name) > 1)
+      stop("multiple files matching set_definition file name")
+    if (length(set_definition_file_name) == 1)
+      set_definitions <- read_file(set_definition_file_name)
+    missing_names <-
+      setdiff(c("treatment", "set_name", "condition"),
+              names(set_definitions))
+    extra_names <- setdiff(names(set_definitions),
+                           c("treatment", "set_name",
+                             "condition", "time_subtract"))
+    extra_names <- extra_names[!grep("^.comment", extra_names)]
+    if (length(missing_names) > 0)
+      stop("set_definitions file missing column(s): ",
+           paste(missing_names, collapse = ", "))
+    if (length(extra_names) > 0)
+      stop("unrecognized column name(s): ",
+           paste(extra_names, collapse = ", "))
+    ## just in case we have only logicals
+    set_definitions$condition <-
+      as.character(set_definitions$condition)
+    
+    if (!("time_subtract" %in% names(set_definitions))) {
+      set_definitions <-
+        dplyr::mutate_(set_definitions, time_subtract = 0)
+    }
+    else{
+      neg_offset <- which(set_definitions$time_subtract < 0)
+      if (length(neg_offset))
+        stop("bad offset in set_definitions line(s) ",
+             paste(neg_offset, collapse = ", "))
+      
+      ## check whether time_subtracts match numbers in conditions,
+      ##  warning if not
+      time_matches_condition <-
+        sapply(1:nrow(set_definitions),
+               function(i) {
+                 if (is.na(set_definitions$time_subtract[i]))
+                   TRUE
+                 else
+                   grepl(set_definitions$time_subtract[i],
+                         set_definitions$condition[i])
+               })
+      problem_conditions <- which(!time_matches_condition)
+      if (length(problem_conditions)) {
+        bad_conds <-
+          sapply(problem_conditions, function(this_row) {
+            paste(
+              this_row,
+              set_definitions$condition[this_row],
+              set_definitions$time_subtract[this_row],
+              sep = "\t"
+            )
+          })
+        bad_conds <- paste(bad_conds, collapse = "\n")
+      
+      
+      message <-
+        paste(
+          "\n",
+          bad_conds,
+          "\n",
+          "value of 'time_subtract' does not appear in 'condition' for row",
+          plur(length(problem_conditions)),
+          " ",
+          paste(problem_conditions, collapse = ", "),
+          " in set_definitions",
+          "\n",
+          sep = ""
+        )
       warning(message)
       }
+    }
+    
+    if ("type" %in% names(set_definitions))
+      set_definitions$type <- toupper(set_definitions$type)
+    else{
+      num_rows <- nrow(set_definitions)
+      set_definitions <- rbind(set_definitions, set_definitions)
+      set_definitions$type <- rep(c("PFS", "OS"), each = num_rows)
+      type_col <- match("type", names(set_definitions))
+      set_definitions <-
+        set_definitions[c(type_col, setdiff(1:ncol(set_definitions), type_col))]
+    }
+    set_definitions <- set_definitions[!duplicated(set_definitions),]
+    dups <-
+      duplicated(set_definitions[, c("treatment", "type", "set_name")])
+    if (any(dups)) {
+      stop("it appears you have multiple definitions of some sets: ",
+           set_definitions[dups, c("treatment", "type", "set_name", "condition")])
+    }
+    
+    set_definitions <-
+      set_definitions %>%
+      dplyr::mutate_(time_subtract = ~ ifelse(is.na(time_subtract),
+                                              0, time_subtract))
+    set_definitions
   }
-  if("type" %in% names(set_definitions))
-    set_definitions$type <- toupper(set_definitions$type)
-  else{
-    num_rows <- nrow(set_definitions)
-    set_definitions <- rbind(set_definitions, set_definitions)
-    set_definitions$type <- rep(c("PFS", "OS"), each = num_rows)
-    type_col <- match("type", names(set_definitions))
-    set_definitions <- 
-      set_definitions[ c(type_col, setdiff(1:ncol(set_definitions), type_col))]
-  }
-  set_definitions <- set_definitions[!duplicated(set_definitions), ]
-  dups <- duplicated(set_definitions[, c("treatment", "type", "set_name")])
-  if(any(dups)){
-    stop("it appears you have multiple definitions of some sets: ",
-         set_definitions[dups, c("treatment", "type", "set_name", "condition")])
-  }
-  
-  set_definitions <- 
-    set_definitions %>% 
-    dplyr::mutate_(time_subtract = ~ifelse(is.na(time_subtract), 
-                                           0, time_subtract))
-  set_definitions
-}
 
-
-dist_from_fits <- function(this_fit){
-  attr(this_fit, "dist")
-}
-
-#' 
+#'
 #' Fit survival models using different distributions
 #' @export
 #' @param survdata Survival data to be used.
 #' @param dists Distributional forms to be considered in fitting using
-#'     `flexsurvreg`.  By default, includes exponential, Weibull, 
+#'     `flexsurvreg`.  By default, includes exponential, Weibull,
 #'     lognormal, log-logistic, gamma, gompertz, and generalized gamma.  Kaplan-Meier
 #'     curves will also be stored automatically, with distribution
 #'     name "km".
 #' @param treatment_col_name Name of the column in survdata that holds the
-#'     treatment group names (for example "control", "treatment", 
+#'     treatment group names (for example "control", "treatment",
 #'     "dose1", and so on).
 #' @param time_col_name Name of the column in survdata with event times.
 #' @param censor_col_name Name of the column in survdata with censorship
-#'     indicators.   
+#'     indicators.
 #' @param covariate_col_names  Not yet implemented
 #' @param fit_indiv_groups Should groups be fit individually?  Default TRUE.
-#' @return a matrix (with dimnames) of flexsurvreg objects, 
+#' @return a matrix (with dimnames) of flexsurvreg objects,
 #'     with rows corresponding to
 #'     the distributions, and columns corresponding to groups.
-#' @details 
-#'  `survdata` should be a data frame of the form required for 
+#' @details
+#'  `survdata` should be a data frame of the form required for
 #'  [flexsurv::flexsurvreg()].   In the column specified
 #'  by `censor_col_name` in the data itself,
 #'  1 means that an event (frequently death or disease progression,
@@ -444,24 +446,24 @@ dist_from_fits <- function(this_fit){
 #'  means the event was censored.  So the Kaplan-Meier plot will have
 #'  a drop anywhere the censor column contains a 1, and will not
 #'  contain a drop when the censor column contains a 0.
-#'  
-f_fit_survival_models <- 
+#'
+f_fit_survival_models <-
   function(survdata,
-           dists = allowed_fit_distributions, 
-           time_col_name, 
-           censor_col_name, 
+           dists = allowed_fit_distributions,
+           time_col_name,
+           censor_col_name,
            treatment_col_name,
-           covariate_col_names = NULL, 
-           fit_indiv_groups = TRUE){
+           covariate_col_names = NULL,
+           fit_indiv_groups = TRUE) {
     ##
     ## TODO:  so far, covariate_col_names is only a placeholder
     ##  what needs to be decided is whether to allow all combinations
     ##  of covariates, or have people enter the combinations they want,
     ##  or somehow allow both ways (which might be better handled by
     ##  different functions entering in)
-    if(!requireNamespace("flexsurv", quietly = TRUE))
+    if (!requireNamespace("flexsurv", quietly = TRUE))
       stop("flexsurv package needed to fit survival models")
-    if(!requireNamespace("survminer", quietly = TRUE))
+    if (!requireNamespace("survminer", quietly = TRUE))
       stop("survminer package needed for survival models")
     stopifnot(is.data.frame(survdata))
     stopifnot(nrow(survdata) > 0)
@@ -472,11 +474,12 @@ f_fit_survival_models <-
                 all(covariate_col_names %in% names(survdata)))
     
     ## make a list of the subgroups, and add a group of all together
-    unique_groups <- as.character(unique(survdata[, treatment_col_name]))  
-    if("all" %in% unique_groups)
+    unique_groups <-
+      as.character(unique(survdata[, treatment_col_name]))
+    if ("all" %in% unique_groups)
       stop("can't name a treatment 'all'")
     
-    if(length(unique_groups) > 1){
+    if (length(unique_groups) > 1) {
       groups_list <- c(list(unique_groups))
       names(groups_list) <- c("all")
     }
@@ -484,10 +487,15 @@ f_fit_survival_models <-
       groups_list <- as.list(unique_groups)
       names(groups_list) <- unique_groups
     }
-
-    formula_base_string <- paste("survival::Surv(", time_col_name, ", ", 
-                                 censor_col_name, ")",
-                                 " ~", sep = "")
+    
+    formula_base_string <-
+      paste("survival::Surv(",
+            time_col_name,
+            ", ",
+            censor_col_name,
+            ")",
+            " ~",
+            sep = "")
     
     ## we're going to add "km" to the fit distributions
     ##   and put a survfit object there
@@ -496,53 +504,55 @@ f_fit_survival_models <-
     
     ## cycle through combinations of distributions and subsets,
     ##   getting survival analysis results at each step
-#    conditions <- expand.grid(dist = dists, group = names(groups_list),
-#                              stringsAsFactors = FALSE)
+    #    conditions <- expand.grid(dist = dists, group = names(groups_list),
+    #                              stringsAsFactors = FALSE)
     conditions <- data.frame(dist = dists,
                              stringsAsFactors = FALSE)
-    all_res <- 
-      lapply(1:nrow(conditions), function(i){
+    all_res <-
+      lapply(1:nrow(conditions), function(i) {
         ##this_group_set <- groups_list[[ conditions[i, "group"] ]]
-        this_data <- 
-        ##  survdata[survdata[[treatment_col_name]] %in% this_group_set,
+        this_data <-
+          ##  survdata[survdata[[treatment_col_name]] %in% this_group_set,
           ## c(time_col_name, censor_col_name, treatment_col_name)]
           survdata[, c(time_col_name, censor_col_name, treatment_col_name)]
-                
-## only include the treatment group in the formula
+        
+        ## only include the treatment group in the formula
         ##   if there is more than one treatment in the data set
-        num_treatments <- length(unique(this_data[, treatment_col_name]))
-        if(num_treatments > 1)
-          this_formula <- paste(formula_base_string, treatment_col_name)
+        num_treatments <-
+          length(unique(this_data[, treatment_col_name]))
+        if (num_treatments > 1)
+          this_formula <-
+          paste(formula_base_string, treatment_col_name)
         else
           this_formula <- paste(formula_base_string, "1")
         this_formula <- stats::as.formula(this_formula)
-        if(conditions[i, "dist"] == "km"){
+        if (conditions[i, "dist"] == "km") {
           this_fit <- survminer::surv_fit(this_formula,
-                                          data = this_data) 
+                                          data = this_data)
         }
         else{
-          this_fit <- try(
-            flexsurv::flexsurvreg(this_formula, 
-                                  data = this_data,
-                                  dist = conditions[i, "dist"]),
-            silent = TRUE
-        )
+          this_fit <- try(flexsurv::flexsurvreg(this_formula,
+                                                data = this_data,
+                                                dist = conditions[i, "dist"]),
+                          silent = TRUE)
         }
       })
-    all_res <- 
-      f_add_surv_fit_metrics(all_res, metrics = c("BIC","m2LL"))
-
-      tibble::tibble(dist = rep(dists, length(groups_list)),
-                     treatment = rep(names(groups_list), each = length(dists)),
-                     fit = all_res)
+    all_res <-
+      f_add_surv_fit_metrics(all_res, metrics = c("BIC", "m2LL"))
+    
+    tibble::tibble(
+      dist = rep(dists, length(groups_list)),
+      treatment = rep(names(groups_list), each = length(dists)),
+      fit = all_res
+    )
     
   }
 
 
 #' Choose the best model out of a set based on a metric.
-#'   
+#'
 #' @param surv_fits A list object from `f.get.survival.probs` that gives
-#' 		a collection (list) of parametric survival fit object. 
+#' 		a collection (list) of parametric survival fit object.
 #' @param metric The metric to choose the model by.
 #' 		Currently supports selecting the best model using one (and only one) of the
 #' 		following metrics:
@@ -560,15 +570,14 @@ f_fit_survival_models <-
 
 f_get_best_surv_model <-
   function(surv_fits,
-           metric=c("AIC")) {
-    
+           metric = c("AIC")) {
     #argument checks
     stopifnot(length(surv_fits) > 0)
-    stopifnot(length(metric)==1)
-    stopifnot(metric %in% c("AIC","BIC","m2LL"))
+    stopifnot(length(metric) == 1)
+    stopifnot(metric %in% c("AIC", "BIC", "m2LL"))
     
     #order surv_fits by metric priority
-    sorted = surv_fits[order(sapply(surv_fits,'[[',metric))]
+    sorted = surv_fits[order(sapply(surv_fits, '[[', metric))]
     
     #return best model
     best_model <- sorted[[1]]
@@ -578,29 +587,32 @@ f_get_best_surv_model <-
 
 #'
 #' Calculate additional metrics to evaluate fit of survival model.
-#' 
+#'
 #' @param surv_fits A list object from [f_fit_survival_models()] that gives
-#' 		a collection (list) of `flexsurvreg` parametric survival fit object. 
+#' 		a collection (list) of `flexsurvreg` parametric survival fit object.
 #' @param metrics Metrics to calculate.
 #' @return
 #'   A list object of parametric survival fits, containing additional fields for
-#' 		the calculated fit metrics. 
+#' 		the calculated fit metrics.
 #' @details Currently calculates only:
 #' 		\itemize{\item Bayesian information criterion (BIC)
 #' 		\item -2*log likelihood (-2LL)}  (Objects come with AIC already calculated.)
 
 f_add_surv_fit_metrics <-
-  function(surv_fits, metrics = c("BIC","m2LL")) {
-    
+  function(surv_fits, metrics = c("BIC", "m2LL")) {
     #argument checks
     stopifnot(length(surv_fits) > 0)
-    stopifnot(all(metrics %in% c("BIC","m2LL")))
+    stopifnot(all(metrics %in% c("BIC", "m2LL")))
     
     #get current and previous time step in absolute (not Markov) units
-    for(metric in metrics)
+    for (metric in metrics)
     {
-      if(metric=="BIC") { surv_fits = add_BIC(surv_fits)}
-      if(metric=="m2LL") { surv_fits = add_m2LL(surv_fits)}
+      if (metric == "BIC") {
+        surv_fits = add_BIC(surv_fits)
+      }
+      if (metric == "m2LL") {
+        surv_fits = add_m2LL(surv_fits)
+      }
     }
     
     #returns updated survival fits object
@@ -611,12 +623,14 @@ f_add_surv_fit_metrics <-
 add_BIC <- function(surv_fits)
 {
   out = surv_fits
-  for(i in 1:length(out))
+  for (i in 1:length(out))
   {
-    if(inherits(out[[i]], "flexsurvreg")){
-      this_BIC = (-2*getElement(out[[i]], "loglik") + 
-                    (log(as.numeric(getElement(out[[i]], "N")))*getElement(out[[i]], "npars")))
-      out[[i]]$BIC <- this_BIC 
+    if (inherits(out[[i]], "flexsurvreg")) {
+      this_BIC = (-2 * getElement(out[[i]], "loglik") +
+                    (log(as.numeric(
+                      getElement(out[[i]], "N")
+                    )) * getElement(out[[i]], "npars")))
+      out[[i]]$BIC <- this_BIC
     }
   }
   out
@@ -625,11 +639,11 @@ add_BIC <- function(surv_fits)
 add_m2LL <- function(surv_fits)
 {
   out = surv_fits
-  for(i in 1:length(out))
+  for (i in 1:length(out))
   {
-    if(inherits(out[[i]], "flexsurvreg")){
-      this_m2LL = -2*getElement(out[[i]], "loglik")
-      out[[i]]$m2LL <- this_m2LL 
+    if (inherits(out[[i]], "flexsurvreg")) {
+      this_m2LL = -2 * getElement(out[[i]], "loglik")
+      out[[i]]$m2LL <- this_m2LL
     }
   }
   out
@@ -645,18 +659,18 @@ add_m2LL <- function(surv_fits)
 #' @export
 #'
 #' @examples
-extract_surv_fit_metrics <- 
-  function(fit_tib, metric = c("AIC", "BIC","m2LL")){
+extract_surv_fit_metrics <-
+  function(fit_tib, metric = c("AIC", "BIC", "m2LL")) {
     ## metric <- match.arg(metric)
-    fit_tib <- 
-      fit_tib %>% dplyr::filter_(~ dist != "km")
+    fit_tib <-
+      fit_tib %>% dplyr::filter_( ~ dist != "km")
     fit_tib$fit <-
       lapply(fit_tib$fit, extract_fits)
-     extracted <- 
-       fit_tib %>%
-       dplyr::rowwise() %>%
-       dplyr::do_(~data.frame(.$fit[metric]))
-     tibble::as_tibble(cbind.data.frame(fit_tib, extracted))
+    extracted <-
+      fit_tib %>%
+      dplyr::rowwise() %>%
+      dplyr::do_( ~ data.frame(.$fit[metric]))
+    tibble::as_tibble(cbind.data.frame(fit_tib, extracted))
   }
 
 
@@ -672,8 +686,10 @@ extract_surv_fit_metrics <-
 #'
 #' @return the same data set, with the column recoded
 #'
-fix_censor_col <- function(this_data, this_censor_col,
-                           censor_code, event_code,
+fix_censor_col <- function(this_data,
+                           this_censor_col,
+                           censor_code,
+                           event_code,
                            file_name) {
   ## set up the event values: 1 for event, 0 for censored
   ## this_censor_col <- survival_specs[this_row, "censor_col"]
@@ -717,8 +733,11 @@ fix_censor_col <- function(this_data, this_censor_col,
 #'   and lengthy construction of an error messageout of the main flow.
 #' @return the data, with `to_subtract`` subtracted from the time column
 #'
-subtract_times <- function(subset_data, to_subtract, this_time_col,
-                           set_name, condition) {
+subtract_times <- function(subset_data,
+                           to_subtract,
+                           this_time_col,
+                           set_name,
+                           condition) {
   ## subtract off the appropriate time, if there is one
   if (length(to_subtract) > 0 && !is.na(to_subtract)) {
     subset_data[, this_time_col] <-
@@ -761,7 +780,8 @@ subtract_times <- function(subset_data, to_subtract, this_time_col,
                      condition,
                      "'",
                      sep = "")
-    if (grepl(">=", condition)) #these_sets[set_index, "condition"]))
+    if (grepl(">=", condition))
+      #these_sets[set_index, "condition"]))
       message <- paste(message,
                        "\n",
                        "perhaps you need '>' in your condition rather than '>='?")
@@ -799,56 +819,63 @@ make_filter_strings <- function(survival_specs, this_row) {
 }
 
 
-add_cross_treatment_fits <- function(fit_tibble, dists){
-  
-  
+add_cross_treatment_fits <- function(fit_tibble, dists) {
   ##fit_groups <- fit_tibble[, c("type", "set_name", "set_def", "time_subtract")]
-
+  
   ## the point of all this is to take only those sets that have more
   ##   than one treatment (if all subsets are defined for all treatments,
   ##   you could just use a !duplicated)
-  fit_groups <- 
-    fit_tibble %>% 
-      dplyr::select(-dplyr::matches("fit")) %>% 
-      dplyr::select(-dplyr::matches("dist")) %>% 
-      dplyr::distinct() %>%
-      dplyr::group_by_(~type, ~set_name, ~set_def, ~time_subtract) %>%
-      dplyr::summarize_(num = ~n()) %>%
-      dplyr::filter_(~num > 1) %>%
-      dplyr::select(-dplyr::matches("num"))
+  fit_groups <-
+    fit_tibble %>%
+    dplyr::select(-dplyr::matches("fit")) %>%
+    dplyr::select(-dplyr::matches("dist")) %>%
+    dplyr::distinct() %>%
+    dplyr::group_by_( ~ type, ~ set_name, ~ set_def, ~ time_subtract) %>%
+    dplyr::summarize_(num = ~ n()) %>%
+    dplyr::filter_( ~ num > 1) %>%
+    dplyr::select(-dplyr::matches("num"))
   
   ## fit_groups <- fit_groups[!duplicated(fit_groups), ]
-
-  new_fits <- 
-    fit_groups %>% dplyr::rowwise() %>% 
-      dplyr::do(fit = do.call(get_cross_fit,
-                              list(fit_tibble = fit_tibble,
-                                   set_name = .$set_name,
-                                   type = .$type,
-                                   dists = dists,
-                                   time_subtract = .$time_subtract,
-                                   set_def = .$set_def)))
+  
+  new_fits <-
+    fit_groups %>% dplyr::rowwise() %>%
+    dplyr::do(fit = do.call(
+      get_cross_fit,
+      list(
+        fit_tibble = fit_tibble,
+        set_name = .$set_name,
+        type = .$type,
+        dists = dists,
+        time_subtract = .$time_subtract,
+        set_def = .$set_def
+      )
+    ))
   dplyr::bind_rows(fit_tibble, tidyr::unnest(new_fits))
 }
 
-get_cross_fit <- function(fit_tibble, type, set_name, dists, 
-                          time_subtract, set_def){
-  partial1 <- 
-    dplyr::filter_(fit_tibble,
-                   ~ dist == "km",
-                   lazyeval::interp(~type == var, var = type),
-                   lazyeval::interp(~set_name %in% var, var = set_name)
+get_cross_fit <- function(fit_tibble,
+                          type,
+                          set_name,
+                          dists,
+                          time_subtract,
+                          set_def) {
+  partial1 <-
+    dplyr::filter_(
+      fit_tibble,
+      ~ dist == "km",
+      lazyeval::interp( ~ type == var, var = type),
+      lazyeval::interp( ~ set_name %in% var, var = set_name)
     )
-  reassembled_data <- 
-    dplyr::bind_rows(lapply(partial1$fit, 
-                            function(x){y <- extract_data(x)
-                            names(y) <- c("time", "status", "treatment")
-                            y
-                            }
-    )
-    )
+  reassembled_data <-
+    dplyr::bind_rows(lapply(partial1$fit,
+                            function(x) {
+                              y <- extract_data(x)
+                              names(y) <-
+                                c("time", "status", "treatment")
+                              y
+                            }))
   
-  cross_treatment_fits <- 
+  cross_treatment_fits <-
     f_fit_survival_models(
       reassembled_data,
       dists = dists,
