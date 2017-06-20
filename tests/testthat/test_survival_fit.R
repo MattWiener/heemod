@@ -175,11 +175,13 @@ test_that("fitting works (including with subsets)",
               "censoring status column 'status2' does not exist in data file"
               
             )
-              these_fits <- 
+              full_these_fits <- 
               heemod:::survival_from_data(location = location,
                                  survival_specs = ok_surv_info,
                                  dists = c("exp", "weibull"),
                                  save_fits = FALSE) 
+              these_fits <- dplyr::filter_(full_these_fits,
+                                           ~treatment != "all")
             expect_identical(names(these_fits), 
                              c("type", "treatment", "set_name",
                                "dist", "fit", "set_def",
@@ -224,7 +226,8 @@ test_that("fitting works (including with subsets)",
                                           dists = c("exp", "weibull"),
                                           save_fits = FALSE)#,
                                           # use_envir = new.env())
-            ## metrics <- extract_surv_fit_metrics(abs_path_fits[[1]])
+            abs_path_fits <- dplyr::filter_(abs_path_fits, 
+                                           ~ treatment != "all")
             metrics <- extract_surv_fit_metrics(abs_path_fits)
             expect_identical(names(metrics),
                              c("type", "treatment", "set_name", "dist", "fit",
@@ -265,10 +268,9 @@ test_that("fitting works (including with subsets)",
                                           survival_specs = eventcode_surv_info,
                                           dists = c("exp", "weibull"),
                                           save_fits = FALSE) 
+            eventcode_fits <-
+              dplyr::filter_(eventcode_fits, ~treatment != "all")
             ## this should have same results as earlier fits
-            # expect_identical(lapply(these_fits[[1]]$fit, compute_surv, time = c(45:55)),
-            #                  lapply(eventcode_fits[[1]]$fit, compute_surv, time = c(45:55))
-            #                  )
             expect_identical(lapply(these_fits$fit, compute_surv, time = c(45:55)),
                              lapply(eventcode_fits$fit, compute_surv, time = c(45:55))
             )
@@ -280,7 +282,7 @@ test_that("fitting works (including with subsets)",
                                           dists = c("exp", "weibull"),
                                           save_fits = FALSE,
                                           set_definitions = "set_def_pfs_os.csv")
-            expect_identical(unique(subset_fits_by_type[, 1:3]),
+            expect_equal(unique(subset_fits_by_type[, 1:3]),
                              tibble::tribble(
                                ~type, ~treatment, ~set_name,
                                "OS", "A", "all",
@@ -290,7 +292,10 @@ test_that("fitting works (including with subsets)",
                                "OS", "B", "B5",
                                "PFS", "B", "all",
                                "PFS", "B", "GT50",
-                               "PFS", "B", "B5"
+                               "PFS", "B", "B5",
+                               "OS", "all", "all",
+                               "PFS", "all", "all",
+                               "PFS", "all", "GT50"
                              )
             )
             expect_error(

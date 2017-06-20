@@ -162,30 +162,13 @@ survival_from_data <-
       surv_models <-
         lapply(seq(1:nrow(survival_specs)),
                function(this_row) {
-                 this_treatment <-
-                   survival_specs[this_row, "treatment"]
-                 treatment_col_name <-
-                   survival_specs[this_row, "treatment_col"]
-                 this_time_col <-
-                   survival_specs[this_row, "time_col"]
-                 filter_str <-
-                   paste(treatment_col_name, " == '", this_treatment, "'", sep = "")
+                 ## read in the data and filter on whether patient treated
+                 ##   and, if so, which treatment
+                 filter_strings <- make_filter_strings(survival_specs, this_row)
                  this_data <-
                    read_file(data_files[this_row]) %>%
-                   dplyr::filter_(filter_str)
-                 
-                 ## filter by the treatment flag column
-                 ## (typically intent to treat or actual treatment)
-                 treatment_flag_name <- survival_specs[this_row, "treatment_flag_col"]
-                 treat_string <-
-                   paste(treatment_flag_name, "==", 
-                         "'",
-                         c("Y", "Yes", "1", "TRUE", "T"),
-                         "'",
-                         sep = "",
-                         collapse = " | ")
-                 
-                 this_data <-  dplyr::filter_(this_data, treat_string)
+                    dplyr::filter_(filter_strings$treatment_flag_str) %>%
+                      dplyr::filter_(filter_strings$choose_treatment_str)
                  
                  ## set up the event values: 1 for event, 0 for censored
                   this_data <-
@@ -202,12 +185,10 @@ survival_from_data <-
                                                  survival_specs$fit_directory[this_row]),
                                        file_name = set_definitions)
                  
-                 class(this_data) <- c("survdata", class(this_data))
-                 
                  ## get the set definitions associated with this treatment
                  these_sets <-
                    dplyr::filter_(set_definitions,
-                                  ~ treatment == this_treatment)
+                                  ~ treatment == survival_specs[this_row, "treatment"])
                  ## if relevant, restrict to the set definitions associated
                  ##   with this type (pfs or os)
                  if ("type" %in% names(these_sets)) {
@@ -250,7 +231,6 @@ survival_from_data <-
                          covariate_col_names = NULL,
                          fit_indiv_groups = TRUE
                        )
-                     ## attr(these_surv_fits, "set_definition") <- these_sets[[set_index, "condition"]]
                      these_surv_fits$set_name <-
                        these_sets[[set_index, "set_name"]]
                      these_surv_fits$set_def <-
@@ -298,6 +278,7 @@ survival_from_data <-
       names(surv_models) <- survival_specs$fit_name
       surv_models <- do.call("rbind", surv_models)
 
+      
       if (write_report) {
         if(!file.exists(report_template))
           stop("cannot find report template file ",
@@ -311,7 +292,10 @@ survival_from_data <-
                                         sep = ""))
         )
       }
-
+      ## we don't put out graphs for multi-treatment models,
+      ##  but we do save them and put the parameters into Excel
+      surv_models <- add_cross_treatment_fits(surv_models, dists)
+      
       if (write_excel) {
         write_fits_to_excel_from_tibble(
           fit_tibble = surv_models,
@@ -489,18 +473,18 @@ f_fit_survival_models <-
     
     ## make a list of the subgroups, and add a group of all together
     unique_groups <- as.character(unique(survdata[, treatment_col_name]))  
-    ##groups_list <- c(list(unique_groups))
-    ##names(groups_list) <- c("all")
-    ##if(fit_indiv_groups)
-    ##{
-    ##  if("all" %in% unique_groups)
-    ##    stop("can't fit individual treatments if there is a treatment 'all'")
-    ##  groups_list <- c(as.list(unique_groups), list(unique_groups))
-    ##  names(groups_list) <- c(unique_groups, "all")
-    groups_list <- as.list(unique_groups)
-    names(groups_list) <- unique_groups
-    ##}
+    if("all" %in% unique_groups)
+      stop("can't name a treatment 'all'")
     
+    if(length(unique_groups) > 1){
+      groups_list <- c(list(unique_groups))
+      names(groups_list) <- c("all")
+    }
+    else{
+      groups_list <- as.list(unique_groups)
+      names(groups_list) <- unique_groups
+    }
+
     formula_base_string <- paste("survival::Surv(", time_col_name, ", ", 
                                  censor_col_name, ")",
                                  " ~", sep = "")
@@ -512,15 +496,19 @@ f_fit_survival_models <-
     
     ## cycle through combinations of distributions and subsets,
     ##   getting survival analysis results at each step
-    conditions <- expand.grid(dist = dists, group = names(groups_list),
-                              stringsAsFactors = FALSE)
+#    conditions <- expand.grid(dist = dists, group = names(groups_list),
+#                              stringsAsFactors = FALSE)
+    conditions <- data.frame(dist = dists,
+                             stringsAsFactors = FALSE)
     all_res <- 
       lapply(1:nrow(conditions), function(i){
-        this_group_set <- groups_list[[ conditions[i, "group"] ]]
+        ##this_group_set <- groups_list[[ conditions[i, "group"] ]]
         this_data <- 
-          survdata[survdata[[treatment_col_name]] %in% this_group_set,
-                   c(time_col_name, censor_col_name, treatment_col_name)]
-        ## only include the treatment group in the formula
+        ##  survdata[survdata[[treatment_col_name]] %in% this_group_set,
+          ## c(time_col_name, censor_col_name, treatment_col_name)]
+          survdata[, c(time_col_name, censor_col_name, treatment_col_name)]
+                
+## only include the treatment group in the formula
         ##   if there is more than one treatment in the data set
         num_treatments <- length(unique(this_data[, treatment_col_name]))
         if(num_treatments > 1)
@@ -781,4 +769,99 @@ subtract_times <- function(subset_data, to_subtract, this_time_col,
     stop(message)
   }
   subset_data
+}
+
+
+make_filter_strings <- function(survival_specs, this_row) {
+  this_treatment <-
+    survival_specs[this_row, "treatment"]
+  treatment_col_name <-
+    survival_specs[this_row, "treatment_col"]
+  choose_treatment_str <-
+    paste(treatment_col_name, " == '", this_treatment, "'", sep = "")
+  
+  ## filter by the treatment flag column
+  ## (typically intent to treat or actual treatment)
+  treatment_flag_name <-
+    survival_specs[this_row, "treatment_flag_col"]
+  treatment_flag_str <-
+    paste(
+      treatment_flag_name,
+      "==",
+      "'",
+      c("Y", "Yes", "1", "TRUE", "T"),
+      "'",
+      sep = "",
+      collapse = " | "
+    )
+  list(treatment_flag_str = treatment_flag_str,
+       choose_treatment_str = choose_treatment_str)
+}
+
+
+add_cross_treatment_fits <- function(fit_tibble, dists){
+  
+  
+  ##fit_groups <- fit_tibble[, c("type", "set_name", "set_def", "time_subtract")]
+
+  ## the point of all this is to take only those sets that have more
+  ##   than one treatment (if all subsets are defined for all treatments,
+  ##   you could just use a !duplicated)
+  fit_groups <- 
+    fit_tibble %>% 
+      dplyr::select(-dplyr::matches("fit")) %>% 
+      dplyr::select(-dplyr::matches("dist")) %>% 
+      dplyr::distinct() %>%
+      dplyr::group_by_(~type, ~set_name, ~set_def, ~time_subtract) %>%
+      dplyr::summarize_(num = ~n()) %>%
+      dplyr::filter_(~num > 1) %>%
+      dplyr::select(-dplyr::matches("num"))
+  
+  ## fit_groups <- fit_groups[!duplicated(fit_groups), ]
+
+  new_fits <- 
+    fit_groups %>% dplyr::rowwise() %>% 
+      dplyr::do(fit = do.call(get_cross_fit,
+                              list(fit_tibble = fit_tibble,
+                                   set_name = .$set_name,
+                                   type = .$type,
+                                   dists = dists,
+                                   time_subtract = .$time_subtract,
+                                   set_def = .$set_def)))
+  dplyr::bind_rows(fit_tibble, tidyr::unnest(new_fits))
+}
+
+get_cross_fit <- function(fit_tibble, type, set_name, dists, 
+                          time_subtract, set_def){
+  partial1 <- 
+    dplyr::filter_(fit_tibble,
+                   ~ dist == "km",
+                   lazyeval::interp(~type == var, var = type),
+                   lazyeval::interp(~set_name %in% var, var = set_name)
+    )
+  reassembled_data <- 
+    dplyr::bind_rows(lapply(partial1$fit, 
+                            function(x){y <- extract_data(x)
+                            names(y) <- c("time", "status", "treatment")
+                            y
+                            }
+    )
+    )
+  
+  cross_treatment_fits <- 
+    f_fit_survival_models(
+      reassembled_data,
+      dists = dists,
+      time_col_name = "time",
+      censor_col_name = "status",
+      treatment_col_name = "treatment",
+      covariate_col_names = NULL,
+      fit_indiv_groups = FALSE
+    )
+  
+  cross_treatment_fits$type <- type
+  cross_treatment_fits$set_name <- set_name
+  cross_treatment_fits$time_subtract <- time_subtract
+  cross_treatment_fits$set_def <- set_def
+  cross_treatment_fits
 }

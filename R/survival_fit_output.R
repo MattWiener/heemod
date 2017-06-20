@@ -80,6 +80,11 @@ write_fits_to_excel_from_tibble <-
               )
     XLConnect::createSheet(wb, "OPCPem")
 
+    # fit_tibble_multi_treatment <- 
+    #   dplyr::filter(fit_tibble, treatment == "all")
+    # fit_tibble <-
+    #   dplyr::filter(fit_tibble, treatment != "all")
+    # 
     fit_tibble_nest <- 
       dplyr::filter_(fit_tibble, ~ dist != "km")
     fit_tibble_nest$fit <- lapply(fit_tibble_nest$fit, extract_fits)
@@ -99,18 +104,33 @@ write_fits_to_excel_from_tibble <-
                                }
                              )
                       )
+    
+    num_rows_2 <- 
+      sapply(fit_tibble_nest$data, function(x){
+        1 + sum(sapply(x$fit, function(y){1 + length(coef(y))}))
+      })
+    
     if(alignment == "vertical"){
     rows_per <- 2 * (num_rows + skip_between) + 
       nrow(fit_tibble_nest[[1, "data"]]) + 1
+    rows_per_2 <- 
+      2 * (num_rows_2 + skip_between) + 
+        sapply(fit_tibble_nest$data, nrow) + 1
     }
     if(alignment == "horizontal"){
       rows_per <- 
         num_rows + 
           skip_between + nrow(fit_tibble_nest[[1, "data"]]) + 1
+      rows_per_2 <- 
+        num_rows_2 + skip_between + sapply(fit_tibble_nest$data, nrow) + 1
     }
     fit_tibble_nest$start_row <- skip_at_start + 1 + 
       rows_per * (1:nrow(fit_tibble_nest) - 1)
-  
+    fit_tibble_nest$start_row_2 <- 
+      skip_at_start + 1 + cumsum(rows_per_2) - rows_per_2[1]
+      ## rows_per_2 * (1:nrow(fit_tibble_nest) - 1)
+    
+    
     fit_tibble_nest <-
       fit_tibble_nest %>%
         dplyr::group_by_(~ type, ~ treatment, ~ set_name) %>%
@@ -166,7 +186,7 @@ send_info_to_workbook <-
   
   fit_list <- fit_tib[[1, "data"]][["fit"]]
   names(fit_list) <- fit_tib[[1, "data"]][["dist"]]
-  start_row <- fit_tib[[1, "start_row"]]
+  start_row <- fit_tib[[1, "start_row_2"]]
   dist_names <- names(fit_list)
   fit_info <- prepare_fit_info(fit_list)
   
@@ -614,7 +634,12 @@ plot_cloglog_fit_tibble <-
     ## we're also going to get the Cox proportional hazards
     ##  information.   This is a little bit of a hack, but
     ##  lets us put together the information we need out of
-    ##  what we already have. 
+    ##  what we already have.  (It is currently hard to do this
+    ##  in the main fitting routine in survival_fit.R because
+    ##  of an earlier decision to have subsets defined by treatment,
+    ##  which led to fitting treatment by treatment.   This is 
+    ##  a convenient place where we have the data together across
+    ##  treatments.   May want to fix this someday.)
     
     data_for_cox <- 
       dplyr::bind_rows(lapply(partial1$fit, 
