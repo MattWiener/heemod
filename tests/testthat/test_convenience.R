@@ -470,6 +470,29 @@ test_that("getting weighted costs works",
               2
             ),
             3140.94)
+            
+            ## testing that getting duplicate values for
+            ##   parameters is OK
+            expect_equal(
+              round(
+                weighted_dose_costs(
+                  "lnorm",
+                  params = list(meanlog = rep(4.3423559, 5),
+                             sdlog = rep(0.2116480, 5)),
+                  var_base = 50,
+                  dose_base = 100,
+                  dose_multiplier = 2,
+                  available_units = vialCost,
+                  subset_col = "treatment",
+                  subset_val = "fake",
+                  share_vials = FALSE
+                ), 
+                2),
+              3636.36
+            )
+              
+            
+            
             vialCost <- data.frame(
               treatment = "fake",
               size = c(50, 250),
@@ -585,6 +608,20 @@ test_that("getting weighted costs works",
               "mismatched arguments for function 'qnorm'",
               fixed = TRUE
             )
+            expect_error(
+              weighted_dose_costs(
+                "norm",
+                params = list(mean = c(1.85, 1.87),
+                           sd = 0.25),
+                var_base = 0,
+                dose_base = 0,
+                dose_multiplier = 320,
+                available_units = vialCost,
+                "treatment",
+                "fake",
+                share_vials = FALSE
+              ),
+            "can only have one value for parameter 'mean'")
           })
 
 test_that("cost_iv_compound_administration works",

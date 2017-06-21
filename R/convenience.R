@@ -704,6 +704,22 @@ weighted_dose_costs <- function(dist, params, var_base, dose_base,
                                 dose_multiplier, available_units, subset_col, subset_val,
                                 share_vials,
                                 qmin = 0.01, qmax = 0.99, by = 0.01){
+
+  ## the function originally assumed a single value
+  ##   of each parameter, but can be called with one 
+  ##   value per cycle when evaluating heemod parameters,
+  ##   which would throw off the averaging;
+  ##   add this code to get the unique value or throw an error
+  for(param_name in names(params)){
+    unique_val <- unique(params[[param_name]])
+    if(length(unique_val) > 1)
+      stop("can only have one value for parameter '",
+           param_name,
+           "'", 
+           sep = "")
+    params[[param_name]] <- unique_val
+  }
+  
   qfn <- paste("q", dist, sep = "")
   if(qmin <= 0)
     stop("it does not make sense for 'qmin' to be <= 0")
