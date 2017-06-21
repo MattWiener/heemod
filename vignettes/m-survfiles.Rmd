@@ -1,5 +1,5 @@
 ---
-title: "Running survival models from tabular data"
+title: "Running partitioned survival models from tabular data"
 date: "`r Sys.Date()`"
 output:
   rmarkdown::html_vignette:

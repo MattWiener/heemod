@@ -834,24 +834,37 @@ add_cross_treatment_fits <- function(fit_tibble, dists) {
     dplyr::summarize_(num = ~ n()) %>%
     dplyr::filter_( ~ num > 1) %>%
     dplyr::select(-dplyr::matches("num"))
+
+  ## change how this is calculated from dplyr to
+  ## base R so that we don't set of "no binding
+  ##   for global variables" in R CMD CHECK
+  # new_fits <-
+  #   fit_groups %>% dplyr::rowwise() %>%
+  #   dplyr::do(fit = do.call(
+  #     get_cross_fit,
+  #     list(
+  #       fit_tibble = fit_tibble,
+  #       set_name = .$set_name,
+  #       type = .$type,
+  #       dists = dists,
+  #       time_subtract = .$time_subtract,
+  #       set_def = .$set_def
+  #     )
+  #   ))
   
-  ## fit_groups <- fit_groups[!duplicated(fit_groups), ]
-  
-  new_fits <-
-    fit_groups %>% dplyr::rowwise() %>%
-    dplyr::do(fit = do.call(
-      get_cross_fit,
-      list(
-        fit_tibble = fit_tibble,
-        set_name = .$set_name,
-        type = .$type,
-        dists = dists,
-        time_subtract = .$time_subtract,
-        set_def = .$set_def
-      )
-    ))
-  dplyr::bind_rows(fit_tibble, tidyr::unnest(new_fits))
-}
+  new_fits <- lapply(1:nrow(fit_groups), function(i){
+    do.call(get_cross_fit,
+            list(fit_tibble = fit_tibble,
+                 set_name = fit_groups[[i, "set_name"]],
+                 type = fit_groups[[i, "type"]],
+                 dists = dists,
+                 time_subtract = fit_groups[[i, "time_subtract"]],
+                 set_def = fit_groups[[i, "set_def"]])
+            )
+  })
+  ##  dplyr::bind_rows(fit_tibble, tidyr::unnest(new_fits))
+  dplyr::bind_rows(fit_tibble, dplyr::bind_rows(new_fits))
+  }
 
 get_cross_fit <- function(fit_tibble,
                           type,
