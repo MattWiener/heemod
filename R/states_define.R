@@ -23,18 +23,35 @@
 #' 
 #' @example inst/examples/example_define_state.R
 #'   
-define_state <- function(...) {
+define_state <- function(..., count_types) {
   .dots <- lazyeval::lazy_dots(...)
-  
-  define_state_(.dots)
+  define_state_(.dots, count_types)
 }
 
 #' @export
 #' @rdname define_state
-define_state_ <- function(.dots) {
+define_state_ <- function(.dots, count_types) {
   check_names(names(.dots))
+  if(missing(count_types)){
+    count_types <- rep("", length(.dots))
+  }
+  if(is.null(names(count_types))){
+    names(count_types) <- names(.dots)
+  }
+  acceptable_count_types <- c("beginning", "end", "life-table", "")
+  bad_count_types <- setdiff(count_types, acceptable_count_types)
+  if(length(bad_count_types)){
+    stop(sprintf("bad count type entr%s %s;\n all count types should be one of %s.",
+                 plur_y(length(bad_count_types)),
+                 paste(bad_count_types, collapse = ", "),
+                 paste(acceptable_count_types, collapse = ", ")
+                 )
+    )
+  }
   structure(.dots,
-            class = c("state", class(.dots)))
+            class = c("state", class(.dots)),
+            value_count_types = count_types[match(names(count_types),
+                                                  names(.dots))])
 }
 
 #' @export
@@ -146,13 +163,14 @@ define_state_list_ <- function(.dots) {
       paste(.x, collapse = ", ")
     ))
   }
-  
   check_states(.dots)
   
-  structure(
-    .dots,
-    class = c("uneval_state_list", class(.dots))
-  )
+  res <-   structure(
+      .dots,
+      class = c("uneval_state_list", class(.dots))
+    )
+  check_value_count_types_consistent(res)
+  res
 }
 
 #' @rdname define_state_list
@@ -246,3 +264,48 @@ get_state_names <- function(x, ...){
 get_state_names.default <- function(x, ...){
   names(x)
 }
+
+#' Get value count types
+#'
+#' @param x A `state` or `lazy_dot` or `uneval_state_list` object.
+#'
+#' @return a named vector of count types
+#' @details The value count types will be passed to
+#'   [correct_counts()] as the `method` argument.
+#' @export
+#'
+#' @examples
+get_state_value_count_types <- function(x){
+  UseMethod("get_state_value_count_types")
+  }
+get_state_value_count_types.uneval_state_list <-
+  function(x){
+    check_value_count_types_consistent(x)
+    get_state_value_count_types(x[[1]])
+  }
+get_state_value_count_types.state <-
+  function(x){
+    attributes(x)[["value_count_types"]]
+  }
+get_state_value_count_types.lazy_dots <-
+  get_state_value_count_types.state
+
+check_value_count_types_consistent <- function(x){
+  if(!inherits(x, "uneval_state_list"))
+    stop("function check_value_count_types_consistent ", 
+         "requires an uneval_state_list")
+  types_by_state <- 
+    lapply(x, function(y)get_state_value_count_types(y))
+  
+  type_matrix <- 
+    matrix(unlist(types_by_state),
+           ncol = length(x),
+           byrow = TRUE
+    )
+  num_types_per_val <- 
+    apply(type_matrix, 2, function(x){length(unique(x))})
+  if(any(num_types_per_val > 1))
+    stop("state value types do not agree")
+  else 
+    NULL
+  }

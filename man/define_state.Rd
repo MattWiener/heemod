@@ -6,9 +6,9 @@
 \alias{modify.state}
 \title{Define a Markov Model State}
 \usage{
-define_state(...)
+define_state(..., count_types)
 
-define_state_(.dots)
+define_state_(.dots, count_types)
 
 \method{modify}{state}(.OBJECT, ...)
 }

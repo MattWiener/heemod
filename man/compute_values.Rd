@@ -4,12 +4,15 @@
 \alias{compute_values}
 \title{Compute State Values per Cycle}
 \usage{
-compute_values(states, counts)
+compute_values(states, counts, value_count_types)
 }
 \arguments{
 \item{states}{An object of class \code{eval_state_list}.}
 
 \item{counts}{An object of class \code{cycle_counts}.}
+
+\item{counts}{value_count_types the type of count with
+which each value should be calculated.}
 }
 \value{
 A data.frame of state values, one column per
@@ -18,5 +21,9 @@ state value and one row per cycle.
 \description{
 Given states and counts, computes the total state values
 per cycle.
+}
+\details{
+The values of \code{value_count_types} can be any
+of the methods acceptable to \code{\link[=correct_counts]{correct_counts()}}.
 }
 \keyword{internal}

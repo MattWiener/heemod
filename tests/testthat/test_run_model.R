@@ -263,8 +263,15 @@ test_that(
     rm <- run_model(mod1, mod2,
                      parameters = par1, cost = x, effect = y,
                      cycles = 5)
+    
+    
+    ## NEED TO FIX
+    ##   because life-table method was not applied to count table anymore
+    ##   need some way to do correct counts later on this type - or to 
+    ##   return all three sets of counts?
+    
     expect_equivalent(
-      round(get_counts(rm, 1)$count),
+      round(get_counts(rm, 1) %>% correct_counts(method = "life-table")),
       c(950, 888, 879, 885, 890, 950,
         888, 879, 885, 890, 50, 112, 
         121, 115, 110, 50, 112, 121, 115, 110)

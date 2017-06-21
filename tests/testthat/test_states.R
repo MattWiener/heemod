@@ -61,6 +61,8 @@ y = 123',
       get_state_value_names(s1),
       c("x", "y")
     )
+    expect_identical(get_state_value_count_types(s1),
+                 c(x = "", y = ""))
   }
 )
 
@@ -74,6 +76,11 @@ test_that(
     s2 <- define_state(
       x = 987,
       y = 1726
+    )
+    s3 <- define_state(
+      x = 100,
+      y = 200,
+      count_types = c("beginning", "end")
     )
     sl1 <- heemod:::define_state_list(
       X1 = s1,
@@ -180,6 +187,10 @@ y"
     expect_equal(
       get_state_value_names(sl1),
       c("x", "y")
+    )
+    expect_error(
+      define_state_list(s1, s3),
+      "state value types do not agree"
     )
   }
 )

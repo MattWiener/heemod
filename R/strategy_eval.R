@@ -62,6 +62,12 @@ eval_strategy <- function(strategy, parameters, cycles,
   
   states <- eval_state_list(uneval_states, parameters)
   
+  ## get the value count types - if they are blank (as they
+  ##   will be for models created in earlier versions, or
+  ##   without specifying count_type, then we use method)
+  value_count_types <- get_state_value_count_types(uneval_states)
+  value_count_types[value_count_types == ""] <- method
+
   transition <- eval_transition(uneval_transition,
                                 parameters)
   
@@ -69,10 +75,12 @@ eval_strategy <- function(strategy, parameters, cycles,
     x = transition,
     init = init,
     inflow = inflow
-  ) %>% 
-    correct_counts(method = method)
+  ) 
   
-  values <- compute_values(states, count_table)
+## %>%     
+## correct_counts(method = method)
+  
+  values <- compute_values(states, count_table, value_count_types)
   values[1, names(starting_values)] <- values[1, names(starting_values)] +
     starting_values * n_indiv
   
@@ -205,18 +213,42 @@ compute_counts.eval_matrix <- function(x, init, inflow, ...) {
 #' 
 #' @param states An object of class `eval_state_list`.
 #' @param counts An object of class `cycle_counts`.
-#'   
+#' @param counts value_count_types the type of count with
+#'   which each value should be calculated.
 #' @return A data.frame of state values, one column per 
 #'   state value and one row per cycle.
-#'   
+#' @details The values of `value_count_types` can be any 
+#'   of the methods acceptable to [correct_counts()].
+#' 
 #' @keywords internal
 ## slightly harder to read than the original version, but much faster
 ## identical results to within a little bit of numerical noise
-compute_values <- function(states, counts) {
+compute_values <- function(states, counts, value_count_types) {
   states_names <- get_state_names(states)
   state_values_names <- get_state_value_names(states)
-  num_cycles <- nrow(counts)
+  ##num_cycles <- nrow(counts)
 
+  different_count_type_values <- 
+    lapply(unique(value_count_types),
+         function(this_count_type){
+             these_state_value_names <- 
+               state_values_names[value_count_types == this_count_type]
+           
+           use_counts <- counts %>% correct_counts(method = this_count_type)
+           actually_compute_values(states, use_counts, 
+                                   these_state_value_names, 
+                                   states_names)
+         }
+  )
+  markov_col <- different_count_type_values[[1]]["markov_cycle"]
+  dplyr::bind_cols(markov_col, lapply(different_count_type_values,
+                                      "[", -1))
+}
+
+  actually_compute_values <- 
+    function(states, counts, state_values_names, 
+             states_names){
+  num_cycles <- nrow(counts)
   ## combine the list of states into a single large array
   dims_array_1 <- c(
     num_cycles,
@@ -225,13 +257,17 @@ compute_values <- function(states, counts) {
   
   dims_array_2 <- dims_array_1 + c(0, 1, 0)
   
-  state_val_array <- array(unlist(states), dim = dims_array_2)
-
-  ## get rid of markov_cycle
-  mc_col <- match("markov_cycle", names(states[[1]]))
-  state_val_array <- state_val_array[, -mc_col, , drop = FALSE]
-
+  states_with_just_needed_vals <- 
+    lapply(states, "[", state_values_names)
+  state_val_array <- array(unlist(states_with_just_needed_vals), #dim = dims_array_2)
+                           dim = dims_array_1)
+  ## we have already gotten rid of the markov_cycle column
+  # ## get rid of markov_cycle
+  # mc_col <- match("markov_cycle", names(states[[1]]))
+  # state_val_array <- state_val_array[, -mc_col, , drop = FALSE]
+  # 
   ## put counts into a similar large array
+  
   counts_mat <- array(unlist(counts[, states_names]),
                       dim = dims_array_1[c(1, 3, 2)])
   counts_mat <- aperm(counts_mat, c(1, 3, 2))
