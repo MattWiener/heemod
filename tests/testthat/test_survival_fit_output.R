@@ -29,7 +29,7 @@ test_that("prepare plot data from fit tibble",
             these_fits <- dplyr::filter_(full_these_fits,
                                          ~treatment != "all")
             aa <- prepare_plot_data_from_fit_tibble(these_fits[1:3, ], B_ci = 0)
-            expect_equal
+
             expect_equal(aa$est[seq(from = 0, to = 2000, by = 50)],
                          c(0.89900388, 0.80820798, 0.72658211, 0.65320014, 
                            0.58722946, 0.52792156, 0.47460354, 0.84, 0.66, 
