@@ -79,9 +79,6 @@ eval_strategy <- function(strategy, parameters, cycles,
   count_table <- 
     set_count_table_method(count_table, method)
   
-## %>%     
-## correct_counts(method = method)
-  
   values <- compute_values(states, count_table, value_count_types)
   values[1, names(starting_values)] <- values[1, names(starting_values)] +
     starting_values * n_indiv
@@ -263,11 +260,6 @@ compute_values <- function(states, counts, value_count_types) {
     lapply(states, "[", state_values_names)
   state_val_array <- array(unlist(states_with_just_needed_vals), #dim = dims_array_2)
                            dim = dims_array_1)
-  ## we have already gotten rid of the markov_cycle column
-  # ## get rid of markov_cycle
-  # mc_col <- match("markov_cycle", names(states[[1]]))
-  # state_val_array <- state_val_array[, -mc_col, , drop = FALSE]
-  # 
   ## put counts into a similar large array
   
   counts_mat <- array(unlist(counts[, states_names]),
