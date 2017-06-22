@@ -282,6 +282,33 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
   state_file_info <- 
     read_file(ref$full_file[ref$data == "state"])
   
+  ## extract the count_type and discount rows, if present.
+  ## these will eventually be passed to create_model_from_tabular
+  ##   and then create_states_from_tabular
+  count_type <- discount <- NULL
+  discount_row <- match("discount", state_file_info$.model)
+  if(!is.na(discount_row)){
+    if(any(grepl("^.discount", names(state_file_info))))
+      stop("you can't have both a 'discount' row and columns that start with '.discount'"
+      )
+    discount <- state_file_info[discount_row, ]
+    names(discount) <- setdiff(names(state_file_info), c(".model", ".state"))
+    state_file_info <- state_file_info[-discount_row, , drop = FALSE]
+  }
+  count_type_row <- match("count_type", state_file_info$.model)
+  if(!is.na(count_type_row)){
+    value_count_types <- state_file_info[count_type_row, ]
+    names(value_count_types) <- setdiff(names(state_file_info), c(".model", ".state"))
+    state_file_info <- state_file_info[-count_type_row, , drop = FALSE]
+  }
+  
+  ## convert to numeric where possible
+  for(i in 1:ncol(state_file_info)){
+    val <- suppressWarnings(as.numeric(state_file_info[, i]))
+    if(!any(is.na(val)))
+      state_file_info[, i] <- val
+  }
+  
   state_info <- parse_multi_spec(
     state_file_info,
     group_vars = ".state"
@@ -348,7 +375,9 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
         this_tm <- tm_info[[i]]
         create_model_from_tabular(state_info[[i]], 
                                   this_tm,
-                                  df_env = df_env)
+                                  df_env = df_env,
+                                  discount = discount,
+                                  value_count_types = value_count_types)
       }
     })  
   
@@ -389,7 +418,9 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
 #'   
 #' @keywords internal
 create_states_from_tabular <- function(state_info,
-                                       df_env = globalenv()) {
+                                       df_env = globalenv(),
+                                       discount = NULL,
+                                       value_count_types = NULL) {
   
   if(! inherits(state_info, "data.frame")) {
     stop("'state_info' must be a data frame.")
@@ -775,7 +806,9 @@ create_options_from_tabular <- function(opt) {
 #' @keywords internal
 create_model_from_tabular <- function(state_info,
                                       tm_info,
-                                      df_env = globalenv()) {
+                                      df_env = globalenv(),
+                                      discount = NULL,
+                                      value_count_types = NULL) {
   if (length(tm_info) == 0) {
     stop("A transition object must be defined.")
   }
@@ -793,7 +826,9 @@ create_model_from_tabular <- function(state_info,
   
   if (options()$heemod.verbose) message("**** Defining state list...")
   states <- create_states_from_tabular(state_info,
-                                       df_env = df_env)
+                                       df_env = df_env,
+                                       discount = discount,
+                                       value_count_types = value_count_types)
   if (options()$heemod.verbose) message("**** Defining TM...")
   
   if (inherits(tm_info, "data.frame")) {
