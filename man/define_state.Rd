@@ -16,6 +16,9 @@ define_state_(.dots, count_types)
 \item{...}{Name-value pairs of expressions defining state
 values.}
 
+\item{count_types}{the count type with which each
+value should be calculated.}
+
 \item{.dots}{Used to work around non-standard evaluation.}
 
 \item{.OBJECT}{An object of class \code{state}.}
@@ -37,6 +40,10 @@ For the \code{modify} function, existing values are
 modified, no new values can be added. Values order
 matters since only values defined earlier can be
 referenced in later expressions.
+
+If \code{count_types} is not specified, it defaults to "".
+When values are calculated, this will be replaced
+by the \code{method} argument of \code{\link[=eval_strategy]{eval_strategy()}}.
 }
 \examples{
 st <- define_state(

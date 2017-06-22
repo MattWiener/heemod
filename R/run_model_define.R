@@ -359,13 +359,17 @@ get_values.list <- function(x, ...) {
 #'   
 #' @return A data frame of counts per state.
 #' @export
-get_counts <- function(x, ...) {
+get_counts <- function(x,  ...) {
   UseMethod("get_counts")
 }
 
 #' @rdname get_counts
 #' @export
 get_counts.run_model <- function(x, ...) {
+  # if(missing(method))
+  #   method <- get_count_table_method(x$count)
+  # if(is.null(method))
+  #   method <- "life-table"
   res <- do.call(
     bind_rows,
     lapply(
@@ -378,6 +382,7 @@ get_counts.run_model <- function(x, ...) {
       }
     )
   )
+  
   
   tidyr::gather_(
     data = res,
@@ -392,14 +397,17 @@ get_counts.run_model <- function(x, ...) {
 #' @rdname get_counts
 #' @export
 get_counts.eval_strategy <- function(x, ...) {
-  x$counts
+  .dots <- list(...)
+  if("method" %in% .dots)
+    method <- .dots$method
+  else
+    method <- get_count_table_method(x$count)
+  x$counts %>% correct_counts(method = method)
 }
 
 #' @rdname get_counts
 #' @export
-get_counts.list <- function(x, ...) {
-  x$counts
-}
+get_counts.list <- get_counts.eval_strategy
 
 get_uneval_init <- function(x) {
   UseMethod("get_uneval_init")

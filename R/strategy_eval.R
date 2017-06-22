@@ -76,6 +76,8 @@ eval_strategy <- function(strategy, parameters, cycles,
     init = init,
     inflow = inflow
   ) 
+  count_table <- 
+    set_count_table_method(count_table, method)
   
 ## %>%     
 ## correct_counts(method = method)
@@ -319,7 +321,7 @@ expand_if_necessary <- function(strategy, parameters,
   
   if (expand) {
     if (inherits(uneval_transition, "part_surv")) {
-      stop("Cannot use 'state_time' with partitionned survival.")
+      stop("Cannot use 'state_time' with partitioned survival.")
     }
     
     uneval_transition <- i_uneval_transition
@@ -419,3 +421,12 @@ expand_if_necessary <- function(strategy, parameters,
     expanded_states = to_expand,
     expansion_cols = exp_cols)
 }
+  
+  set_count_table_method <- function(count_table, method){
+    attributes(count_table)[["method"]] <- method
+    count_table
+  }
+  get_count_table_method <- function(count_table){
+    attributes(count_table)[["method"]]
+  }
+  

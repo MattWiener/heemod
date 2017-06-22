@@ -108,7 +108,10 @@ expand_state.uneval_state_list <- function(x, state_name, cycles) {
     function(x) substitute_dots(st, list(state_time = x))
   )
   names(res) <- sprintf(".%s_%i", state_name, id)
-  
+  for(this_piece in seq(along = res))
+    res[[this_piece]] <- 
+      set_state_value_count_types(res[[this_piece]], 
+                                  get_state_value_count_types(st))
   structure(
     c(x, res),
     class = class(x)
@@ -212,7 +215,8 @@ interpolate.uneval_matrix <- function(x, ...) {
 #' @rdname interpolate
 interpolate.state <- function(x, ...) {
   res <- interpolate.default(x, ...)
-  define_state_(res)
+  define_state_(res, get_state_value_count_types(x))
+
 }
 
 #' @export

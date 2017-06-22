@@ -271,7 +271,7 @@ test_that(
     ##   return all three sets of counts?
     
     expect_equivalent(
-      round(get_counts(rm, 1) %>% correct_counts(method = "life-table")),
+      round(get_counts(rm)$count),
       c(950, 888, 879, 885, 890, 950,
         888, 879, 885, 890, 50, 112, 
         121, 115, 110, 50, 112, 121, 115, 110)

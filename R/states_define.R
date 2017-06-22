@@ -16,7 +16,12 @@
 #'   values.
 #' @param .OBJECT An object of class `state`.
 #' @param .dots Used to work around non-standard evaluation.
-#'   
+#' @param count_types the count type with which each
+#'   value should be calculated.
+#' @details 
+#'   If `count_types` is not specified, it defaults to "".
+#'   When values are calculated, this will be replaced
+#'   by the `method` argument of [eval_strategy()].
 #' @return An object of class `state` (actually a named
 #'   list of `lazy` expressions).
 #' @export
@@ -289,6 +294,12 @@ get_state_value_count_types.state <-
   }
 get_state_value_count_types.lazy_dots <-
   get_state_value_count_types.state
+
+set_state_value_count_types <-
+  function(x, value_count_types){
+  attributes(x)[["value_count_types"]] <- value_count_types
+  x
+}
 
 check_value_count_types_consistent <- function(x){
   if(!inherits(x, "uneval_state_list"))
