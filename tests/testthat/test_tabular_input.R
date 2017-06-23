@@ -272,6 +272,11 @@ test_that(
       "Multiple discount values for '.discount.qaly'.",
       fixed = TRUE
     )
+    
+    ## test for new input format as well (with discount and
+    ##   count_type specified for values in the same column)
+    
+    
   }
 )
 
@@ -464,6 +469,33 @@ test_that(
     expect_error(
       create_model_from_tabular(states1, NULL, NULL, new.env())
     )
+  }
+)
+
+test_that(
+  "parsing state information inputs",
+  {
+    file1 <- system.file("tabular/test/state_info_file_v1.csv", 
+                         package = "heemod")
+    state_info_1 <- read_file(file1)
+    res1 <- parse_state_file_info(state_info_1)
+    
+    state_info_2 <- cbind(state_info_1, X = c(NA, 0.05, NA, NA,
+                                             NA, NA, NA, NA)
+                         )
+    expect_error(parse_state_file_info(state_info_2),
+                 "a count type must be specified for each value")
+    state_info_3 <- state_info_1
+    state_info_3$cost[1] <- "maybe-function"
+    expect_warning(parse_state_file_info(state_info_3),
+                   "unknown value count type maybe-function")
+    state_info_4 <- cbind(state_info_1, .discount.cost = rep(0.03, 8))
+    expect_error(parse_state_file_info(state_info_4),
+                 "can't have both a 'discount' row and columns that start with '.discount'")
+    state_info_5 <- state_info_1
+    state_info_5[2, 3:4] <- NA
+    expect_warning(parse_state_file_info(state_info_5),
+                   "discount row defined, but no discounts specified in value columns")
   }
 )
 

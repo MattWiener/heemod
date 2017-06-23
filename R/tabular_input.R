@@ -282,42 +282,12 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
   state_file_info <- 
     read_file(ref$full_file[ref$data == "state"])
   
-  ## extract the count_type and discount rows, if present.
-  ## these will eventually be passed to create_model_from_tabular
-  ##   and then create_states_from_tabular
-  count_type <- discount <- NULL
-  discount_row <- grep("discount", state_file_info$.model)
-  if(length(discount_row) > 1)
-    stop("can have at most one occurrence of 'discount' in the '.model' column;\n",
-         "no use of 'discount' in model names")
-  if(length(discount_row) == 1){
-    if(any(grepl("^.discount", names(state_file_info))))
-      stop("you can't have both a 'discount' row and columns that start with '.discount'"
-      )
-    discount <- unlist(state_file_info[discount_row, ])
-    discount <- discount[-match(c(".model", ".state"), names(discount))]
-    discount <- discount[!is.na(discount)]
-    state_file_info <- state_file_info[-discount_row, , drop = FALSE]
-  }
-  count_type_row <- match("count_type", state_file_info$.model)
-  if(!is.na(count_type_row)){
-    value_count_types <- state_file_info[count_type_row, ]
-    names(value_count_types) <- setdiff(names(state_file_info), c(".model", ".state"))
-    state_file_info <- state_file_info[-count_type_row, , drop = FALSE]
-  }
-  
-  ## convert to numeric where possible
-  for(i in 1:ncol(state_file_info)){
-    val <- suppressWarnings(as.numeric(state_file_info[, i]))
-    if(!any(is.na(val)))
-      state_file_info[, i] <- val
-  }
-  
-  state_info <- parse_multi_spec(
-    state_file_info,
-    group_vars = ".state"
-  )
+  parsed_info <- parse_state_file_info(state_file_info)
+  state_info <- parsed_info$state_info
+  discount <- parsed_info$discount
+  value_count_types <- parsed_info$value_count_types
   state_names <- state_info[[1]]$.state
+
   ## to accomodate partitioned survival models, we will allow for
   ##   the possibility that there is no transition matrix ...
   if (options()$heemod.verbose) message("*** Reading TM...")
@@ -388,6 +358,98 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
   names(models) <- names(state_info)
   
   models
+}
+
+#' Parse state file info files
+#'
+#' @param state_file_info information read from a state file
+#'
+#' @return a list with three components:  parsed state information,
+#'    discount rates, and the count type to be used in computing
+#'    each value
+#' @internal
+#'
+#' @examples
+#'   file1 <- system.file("tabular/test/state_info_file_v1.csv", package = "heemod")
+#'   state_info_1 <- read_file(file1)
+#'   res1 <- parse_state_file_info(state_info_1)
+
+parse_state_file_info <- function(state_file_info) {
+  ## extract the count_type and discount rows, if present.
+  ## these will eventually be passed to create_model_from_tabular
+  ##   and then create_states_from_tabular
+  value_count_types <- discount <- NULL
+  discount_row <- grep("discount", state_file_info$.model)
+  discount_cols <- grep("^.discount", names(state_file_info),
+                        value = TRUE)
+  if (length(discount_row) > 1)
+    stop(
+      "can have at most one occurrence of 'discount' in the '.model' column;\n",
+      "no use of 'discount' in model names"
+    )
+  if (length(discount_row) == 1) {
+    if (length(discount_cols))
+      stop("can't have both a 'discount' row ", 
+           "and columns that start with '.discount'")
+    discount <- unlist(state_file_info[discount_row,])
+    discount <-
+      discount[-match(c(".model", ".state"), names(discount))]
+    discount <- discount[!is.na(discount)]
+    if (length(discount) == 0)
+      warning("discount row defined, but no discounts specified in value columns")
+    state_file_info <- state_file_info[-discount_row, , drop = FALSE]
+  }
+  count_type_row <- match("count_type", state_file_info$.model)
+  if (length(count_type_row) > 1)
+    stop(
+      "can have at most one occurrence of 'count_type' in the '.model' column;\n",
+      "no use of 'count_type' in model names"
+    )
+  
+  if (!is.na(count_type_row)) {
+    value_count_types <- state_file_info[count_type_row,]
+    value_count_types <- unlist(value_count_types)
+    value_count_types <- 
+      value_count_types[-match(c(".model", ".state", discount_cols),
+                                 names(value_count_types))]
+    names(value_count_types) <-
+      setdiff(names(state_file_info), c(".model", ".state", discount_cols))
+    acceptable_count_types <- eval(formals(correct_counts)$method)
+    na_value_count_types <- 
+      names(value_count_types)[is.na(value_count_types)]
+    
+    ## throw an error for missing count types
+    if(length(na_value_count_types))
+      stop("a count type must be specified for each value; ",
+           "unspecified for values",
+           paste(na_value_count_types, collapse = ", ")
+           )
+    ## warn about unknown value count types
+    known_count_types <- c("beginning", "end", "life-table", "")
+    unknown_count_types <- setdiff(value_count_types[], acceptable_count_types)
+    if(length(unknown_count_types) > 0)
+      warning(sprintf("unknown value count type%s %s;\n acceptable count types: %s",
+                   plur(length(unknown_count_types)),
+                   paste(unknown_count_types, collapse = ", "),
+                   paste(known_count_types, collapse = ", ")
+                   )
+           )
+   state_file_info <-
+      state_file_info[-count_type_row, , drop = FALSE]
+  }
+  
+  ## convert to numeric where possible
+  for (i in 1:ncol(state_file_info)) {
+    val <- suppressWarnings(as.numeric(state_file_info[, i]))
+    if (!any(is.na(val)))
+      state_file_info[, i] <- val
+  }
+  
+  state_info <- parse_multi_spec(state_file_info,
+                                 group_vars = ".state")
+  list(state_info = state_info,
+       discount = discount,
+       value_count_types = value_count_types)
 }
 
 #' Create State Definitions From Tabular Input
@@ -998,7 +1060,11 @@ parse_multi_spec <- function(multi_spec,
     occurences$count > 1 & occurences$count < num_splits
   
   if(any(wrong_number_times)) {
-    stop("'group_var' combinations must be specified either once for all splits or once for each split.")
+    stop("'group_var' combinations must be specified ", 
+         "either once for all splits or once for each split.\n",
+         "split values: ",
+         paste(unique_splits, collapse = ", "),
+         "\n")
   }
   
   just_once <- multi_spec %>% 
