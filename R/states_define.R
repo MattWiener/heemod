@@ -37,7 +37,7 @@ define_state <- function(..., count_types) {
 #' @rdname define_state
 define_state_ <- function(.dots, count_types) {
   check_names(names(.dots))
-  if(missing(count_types)){
+  if(missing(count_types) || length(count_types) == 0){
     count_types <- rep("", length(.dots))
   }
   if(is.null(names(count_types))){
@@ -279,7 +279,6 @@ get_state_names.default <- function(x, ...){
 #'   [correct_counts()] as the `method` argument.
 #' @export
 #'
-#' @examples
 get_state_value_count_types <- function(x){
   UseMethod("get_state_value_count_types")
   }
@@ -310,7 +309,7 @@ check_value_count_types_consistent <- function(x){
   
   type_matrix <- 
     matrix(unlist(types_by_state),
-           ncol = length(x),
+           nrow = length(x),
            byrow = TRUE
     )
   num_types_per_val <- 

@@ -369,11 +369,6 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
 #'    each value
 #' @internal
 #'
-#' @examples
-#'   file1 <- system.file("tabular/test/state_info_file_v1.csv", package = "heemod")
-#'   state_info_1 <- read_file(file1)
-#'   res1 <- parse_state_file_info(state_info_1)
-
 parse_state_file_info <- function(state_file_info) {
   ## extract the count_type and discount rows, if present.
   ## these will eventually be passed to create_model_from_tabular
@@ -588,7 +583,8 @@ create_states_from_tabular <- function(state_info,
               }
             )), values),
             env = df_env
-          )
+          ),
+          count_types = value_count_types
         )
       }
     ), state_info$.state)

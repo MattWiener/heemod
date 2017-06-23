@@ -17,8 +17,3 @@ each value
 \description{
 Parse state file info files
 }
-\examples{
-  file1 <- system.file("tabular/test/state_info_file_v1.csv", package = "heemod")
-  state_info_1 <- read_file(file1)
-  res1 <- parse_state_file_info(state_info_1)
-}

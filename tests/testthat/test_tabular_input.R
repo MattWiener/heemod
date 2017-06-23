@@ -21,7 +21,10 @@ test_that(
   "Normal state file input works.",
   {
     states1 <- heemod:::create_states_from_tabular(state_spec)
-    
+    states1_count_type <- heemod:::create_states_from_tabular(state_spec, 
+                                                   value_count_types = c(cost = "end",
+                                                                         qaly = "life-table")
+                                                   )
     expect_output(
       print(states1),
       "A list of 5 states with 2 values each.
@@ -46,7 +49,15 @@ qaly",
       c("PrimaryTHR", "SuccessfulPrimary",
         "RevisionTHR", "SuccessfulRevision", "Death")
     )
+    expect_identical(get_state_names(states1),
+                 get_state_names(states1_count_type))
     
+    expect_identical(get_state_value_count_types(states1),
+                     c(cost = "", qaly = "")
+                     )
+    expect_identical(get_state_value_count_types(states1_count_type),
+                     c(cost = "end", qaly = "life-table")
+                     )
     ## compound test of f_parse_multi_spec and f_define_states_from_tabular
     parsed_spec <- heemod:::parse_multi_spec(
       state_spec_file,
