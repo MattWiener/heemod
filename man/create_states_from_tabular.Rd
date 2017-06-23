@@ -4,7 +4,8 @@
 \alias{create_states_from_tabular}
 \title{Create State Definitions From Tabular Input}
 \usage{
-create_states_from_tabular(state_info, df_env = globalenv())
+create_states_from_tabular(state_info, df_env = globalenv(),
+  discounts = NULL, value_count_types = NULL)
 }
 \arguments{
 \item{state_info}{Result for one model of

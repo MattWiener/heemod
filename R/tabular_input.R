@@ -286,13 +286,17 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
   ## these will eventually be passed to create_model_from_tabular
   ##   and then create_states_from_tabular
   count_type <- discount <- NULL
-  discount_row <- match("discount", state_file_info$.model)
-  if(!is.na(discount_row)){
+  discount_row <- grep("discount", state_file_info$.model)
+  if(length(discount_row) > 1)
+    stop("can have at most one occurrence of 'discount' in the '.model' column;\n",
+         "no use of 'discount' in model names")
+  if(length(discount_row) == 1){
     if(any(grepl("^.discount", names(state_file_info))))
       stop("you can't have both a 'discount' row and columns that start with '.discount'"
       )
-    discount <- state_file_info[discount_row, ]
-    names(discount) <- setdiff(names(state_file_info), c(".model", ".state"))
+    discount <- unlist(state_file_info[discount_row, ])
+    discount <- discount[-match(c(".model", ".state"), names(discount))]
+    discount <- discount[!is.na(discount)]
     state_file_info <- state_file_info[-discount_row, , drop = FALSE]
   }
   count_type_row <- match("count_type", state_file_info$.model)
@@ -419,7 +423,7 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
 #' @keywords internal
 create_states_from_tabular <- function(state_info,
                                        df_env = globalenv(),
-                                       discount = NULL,
+                                       discounts = NULL,
                                        value_count_types = NULL) {
   
   if(! inherits(state_info, "data.frame")) {
@@ -440,14 +444,22 @@ create_states_from_tabular <- function(state_info,
   
   state_names <- state_info$.state
   values <- setdiff(names(state_info), c(".model", ".state"))
-  discounts <- values[grep("^\\.discount", values)]
-  values <- setdiff(values, discounts)
-  discounts_clean <- gsub("^\\.discount\\.(.+)", "\\1", discounts)
 
+  pre_discounts <- values[grep("^\\.discount", values)]
+  if(length(discounts) > 0 & length(pre_discounts) > 0)
+    stop("define either a discount row or discount columns, but not both")
+  
+  values <- setdiff(values, pre_discounts)
+  if(length(discounts) == 0){  
+    discount_names <- gsub("^\\.discount\\.(.+)", "\\1", pre_discounts)
+    discounts <- character(length(discount_names))
+    names(discounts) <- discount_names
+  }
+  
   num_missing_per_column <- colSums(sapply(state_info, is.na))
   missing_col_names <- names(num_missing_per_column)[num_missing_per_column > 0]
   ## missing names are allowed for discount columns
-  missing_col_names <- setdiff(missing_col_names, discounts)
+  missing_col_names <- setdiff(missing_col_names, pre_discounts)
   if(length(missing_col_names)){
     stop("value",
          plur(length(missing_col_names)),
@@ -463,14 +475,19 @@ create_states_from_tabular <- function(state_info,
     )
   }
   
-  if (! all(discounts_clean %in% values)) {
+  bad_discount_names <- setdiff(names(discounts), values)
+  if (length(bad_discount_names) > 0) {
     stop(sprintf(
       "Discounting rates defined for non-existing values: %s.",
-      paste(discounts[! discounts %in% values], collapse = ", ")
+      paste(bad_discount_names, collapse = ", ")
     ))
   }
   
-  for (n in discounts) {
+  ## go through discount column names, making sure
+  ##   exactly one discount is provided, and putting
+  ##   the unique value in the appropriate entry of
+  ##   discounts (which has "discount." stripped from the beginning)
+  for (n in pre_discounts) {
     if (all(is.na(state_info[[n]]))) {
       stop(sprintf(
         "No discount values found for '%s'.", n
@@ -482,16 +499,18 @@ create_states_from_tabular <- function(state_info,
       ))
       
     } else {
-      state_info[[n]] <- stats::na.omit(state_info[[n]])[1]
+      discounts[[gsub("^\\.discount\\.(.+)", "\\1", n)]] <- 
+        stats::na.omit(state_info[[n]])[1]
     }
   }
   
-  for (n in discounts_clean) {
+  for (n in names(discounts)) {
     state_info[[n]] <- sprintf(
       "discount(%s, %s)",
       state_info[[n]],
-      state_info[[paste0(".discount.", n)]]
-    )
+      ##state_info[[paste0(".discount.", n)]]
+      discounts[n]
+      )
   }
   
   res <- define_state_list_(
@@ -827,7 +846,7 @@ create_model_from_tabular <- function(state_info,
   if (options()$heemod.verbose) message("**** Defining state list...")
   states <- create_states_from_tabular(state_info,
                                        df_env = df_env,
-                                       discount = discount,
+                                       discounts = discount,
                                        value_count_types = value_count_types)
   if (options()$heemod.verbose) message("**** Defining TM...")
   

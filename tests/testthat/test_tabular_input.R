@@ -249,7 +249,7 @@ test_that(
     
     expect_error(
       heemod:::create_states_from_tabular(pb_disc_state),
-      "Discounting rates defined for non-existing values: .discount.qalyz",
+      "Discounting rates defined for non-existing values: qalyz",
       fixed = TRUE
     )
     
@@ -757,15 +757,17 @@ tXLSX <- heemod:::read_file(system.file(
 
 test_that(
   "Columns that start with '.comment' in their header are ignored.", {
-    expect_that(
+    expect_equal(
       names(tCSV),
-      equals(c(".model", "state", "cost", "qaly", ".discount.cost", ".discount.qaly", "valid.column")))
-    expect_that(
+      c(".model", "state", "cost", "qaly", ".discount.cost", ".discount.qaly", "valid.column")
+      )
+    expect_equal(
       names(tXLS),
-      equals(c(".model", "state", "cost", "qaly", ".discount.cost", ".discount.qaly", "valid.column")))
-    expect_that(
+      c(".model", "state", "cost", "qaly", ".discount.cost", ".discount.qaly", "valid.column")
+      )
+    expect_equal(
       names(tXLSX),
-      equals(c(".model", "state", "cost", "qaly", ".discount.cost", ".discount.qaly", "valid.column"))
+      c(".model", "state", "cost", "qaly", ".discount.cost", ".discount.qaly", "valid.column")
     )
   }
 )
