@@ -62,13 +62,30 @@ A state file contains 2 mandatory columns: `.model` and `.state`, corresponding 
 
 Discounting rates can be specified in `.discount.*` columns, where `*` stands for the name of the value to discount. Values are always discounted at the same rate in all states.^[A single discount rate can be duplicated across states, or specified in one state and left blank elsewhere. Specifying two different discount rates for a single variable in different states will cause an error.]
 
-Values specified for only one strategy will be carried over to others. Only values that differ from one strategy to another must be specified separately for each strategy.
-
 ```{r echo = FALSE}
 heemod:::read_file(system.file("tabular/thr/THR_states.csv", package = "heemod")) %>% 
   format_na %>% 
   knitr::kable()
 ```
+
+There are two possible special values in the `.model` and `.state` columns:  'discount' and
+'count_type'.  The first provides an alternate way to specify the discount rate for each value;
+including both a 'discount' row and '.discount' columns will cause an error.  The second allows
+the user to specify which type of counts should be used to calculate each value.   The possible
+values are 'beginning', 'end', and 'life-table', or the name of a function to be used
+to modify counts; see [correct_counts()].  If no
+'count_type' column is included, all values will be calculated using the 'method' specified when
+running a model.  Below is an alternate version of the state file above, using a discount row, 
+and specifying that cost be calculated based on counts at the .
+```{r echo = FALSE}
+heemod:::read_file(system.file("tabular/thr/THR_states_discount_and_count_type.csv", 
+                               package = "heemod")) %>% 
+  format_na %>% 
+  knitr::kable()
+```
+
+Values specified for only one strategy will be carried over to others. Only values that differ from one strategy to another must be specified separately for each strategy.
+
 
 State values that do not change between models need only be specified once (such as all states except `PrimaryTHR` in the `new` model) and will automatically be repeated between models.
 
