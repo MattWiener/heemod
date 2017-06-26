@@ -1,6 +1,6 @@
 .model,.state,cost,qaly
 discount,,,0.15
-count_type,,"""beginning""","""life-table"""
+count_type,,end,life-table
 standard,PrimaryTHR,0,0
 standard,SuccessfulPrimary,0,0.85
 standard,RevisionTHR,5294,0.3

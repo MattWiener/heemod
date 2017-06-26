@@ -76,7 +76,10 @@ values are 'beginning', 'end', and 'life-table', or the name of a function to be
 to modify counts; see [correct_counts()].  If no
 'count_type' column is included, all values will be calculated using the 'method' specified when
 running a model.  Below is an alternate version of the state file above, using a discount row, 
-and specifying that cost be calculated based on counts at the .
+and specifying that cost be calculated based on counts at the beginning of the cycle (since
+transitions happen at the end), while qalys should be calculated based on the average of
+count at the beginning and end.
+
 ```{r echo = FALSE}
 heemod:::read_file(system.file("tabular/thr/THR_states_discount_and_count_type.csv", 
                                package = "heemod")) %>% 

@@ -367,7 +367,6 @@ create_model_list_from_tabular <- function(ref, df_env = globalenv()) {
 #' @return a list with three components:  parsed state information,
 #'    discount rates, and the count type to be used in computing
 #'    each value
-#' @internal
 #'
 parse_state_file_info <- function(state_file_info) {
   ## extract the count_type and discount rows, if present.
