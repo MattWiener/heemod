@@ -1,4 +1,4 @@
-#' Title
+#' Correct counts for use in estimating values
 #'
 #' @param x a count table
 #' @param method either a string or a function - see details.

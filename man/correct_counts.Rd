@@ -2,7 +2,7 @@
 % Please edit documentation in R/correct_counts.R
 \name{correct_counts}
 \alias{correct_counts}
-\title{Title}
+\title{Correct counts for use in estimating values}
 \usage{
 correct_counts(x, method = c("life-table", "beginning", "end"))
 }
@@ -15,7 +15,7 @@ correct_counts(x, method = c("life-table", "beginning", "end"))
 a data frame with one fewer row than \code{x}.
 }
 \description{
-Title
+Correct counts for use in estimating values
 }
 \details{
 If \code{method} is a string, it should be either \code{life-table},
