@@ -220,12 +220,12 @@ compute_counts.eval_matrix <- function(x, init, inflow, ...) {
 #'   of the methods acceptable to [correct_counts()].
 #' 
 #' @keywords internal
-## slightly harder to read than the original version, but much faster
-## identical results to within a little bit of numerical noise
 compute_values <- function(states, counts, value_count_types) {
+  ## separates out the values by different count types
+  ##   they are supposed to be calculated with, and calls
+  ##   'actually_compute_values' for each set.
   states_names <- get_state_names(states)
   state_values_names <- get_state_value_names(states)
-  ##num_cycles <- nrow(counts)
 
   different_count_type_values <- 
     lapply(unique(value_count_types),
@@ -244,6 +244,13 @@ compute_values <- function(states, counts, value_count_types) {
                                       "[", -1))
 }
 
+## slightly harder to read than the original version, which used
+##    a double for loop, but much faster.
+## identical results to within a little bit of numerical noise.
+## Note for future programmers:  I did write a version of this
+##   using dplyr tools to join the count table and state value
+##   table, multiply counts by values, and then use summarize
+##   to add up.   It's still much slower than this version.
   actually_compute_values <- 
     function(states, counts, state_values_names, 
              states_names){
